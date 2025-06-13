@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2c6d2323ecc00fd40940d13fc50f6b2a
+ComputeShaderImporter:
+  externalObjects: {}
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Resources/MeshWriter.compute
+  uploadId: 639125

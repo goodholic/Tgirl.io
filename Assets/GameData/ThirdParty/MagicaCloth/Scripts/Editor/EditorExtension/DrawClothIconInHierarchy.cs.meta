@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 76013599a0f570d46894b2376881c469
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/EditorExtension/DrawClothIconInHierarchy.cs
+  uploadId: 639125

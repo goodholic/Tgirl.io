@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 18641e17a6fb44e47abf930f8a5dcd54
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/Prefabs/WindParticle.prefab
+  uploadId: 639125

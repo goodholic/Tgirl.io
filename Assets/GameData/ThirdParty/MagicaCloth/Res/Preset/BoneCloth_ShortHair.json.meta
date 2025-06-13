@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 1ce0e01dcc017244b942451d6f08e3c0
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/BoneCloth_ShortHair.json
+  uploadId: 639125

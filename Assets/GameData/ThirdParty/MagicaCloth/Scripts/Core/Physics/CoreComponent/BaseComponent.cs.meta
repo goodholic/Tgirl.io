@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 0e96264e51d403140954fdb0e1057304
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Physics/CoreComponent/BaseComponent.cs
+  uploadId: 639125

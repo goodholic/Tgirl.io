@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: bf7dd36ef5515ce4691cf56c11187b93
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/BoneCloth_FrontHair.json
+  uploadId: 639125

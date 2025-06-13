@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ef109d21ff0859b4c8d01ea99ea04c07
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 251472
+  packageName: Korean Traditional Pattern Effect
+  packageVersion: 1.0
+  assetPath: Assets/KoreanTraditionalPattern_Effect/Animations/Fly8-04.controller
+  uploadId: 577146

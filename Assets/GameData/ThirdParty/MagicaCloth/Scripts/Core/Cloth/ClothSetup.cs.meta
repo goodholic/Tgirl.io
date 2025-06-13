@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 938773b7c2f9e5848b95ae50db4b84bb
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Cloth/ClothSetup.cs
+  uploadId: 639125

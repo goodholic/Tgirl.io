@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: b92d26473990446438b3862bb32a2df9
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Physics/ParticleComponent/ParticleComponent.cs
+  uploadId: 639125

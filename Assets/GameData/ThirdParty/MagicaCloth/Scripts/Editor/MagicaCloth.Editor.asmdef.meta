@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: b0c95f8b1f47e0448aee5bfff60f6813
+AssemblyDefinitionImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/MagicaCloth.Editor.asmdef
+  uploadId: 639125

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 30d6a6a3c6f63074bb1d92cff24a8da1
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/MeshCloth_LongHair.json
+  uploadId: 639125

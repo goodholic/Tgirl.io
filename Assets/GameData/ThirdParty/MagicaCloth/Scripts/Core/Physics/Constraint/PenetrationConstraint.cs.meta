@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: cd6d4b7a84b0e3e4ab2327985096a446
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Physics/Constraint/PenetrationConstraint.cs
+  uploadId: 639125

@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 37aa8f6c25fd8a84b9b1b11e2d6b01df
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/MeshCloth_LongSlitDress.json
+  uploadId: 639125

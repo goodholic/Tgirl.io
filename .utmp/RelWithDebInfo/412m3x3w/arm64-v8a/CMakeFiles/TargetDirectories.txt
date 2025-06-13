@@ -1,0 +1,5 @@
+E:/Projects/GitHub/External/GoodHolic/.utmp/RelWithDebInfo/412m3x3w/arm64-v8a/CMakeFiles/edit_cache.dir
+E:/Projects/GitHub/External/GoodHolic/.utmp/RelWithDebInfo/412m3x3w/arm64-v8a/CMakeFiles/rebuild_cache.dir
+E:/Projects/GitHub/External/GoodHolic/.utmp/RelWithDebInfo/412m3x3w/arm64-v8a/GameActivity/CMakeFiles/game.dir
+E:/Projects/GitHub/External/GoodHolic/.utmp/RelWithDebInfo/412m3x3w/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+E:/Projects/GitHub/External/GoodHolic/.utmp/RelWithDebInfo/412m3x3w/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir

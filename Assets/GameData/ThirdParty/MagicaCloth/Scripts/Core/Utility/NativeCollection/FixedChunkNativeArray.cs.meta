@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 9f928a26a875c0442b1beda82f884069
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Utility/NativeCollection/FixedChunkNativeArray.cs
+  uploadId: 639125

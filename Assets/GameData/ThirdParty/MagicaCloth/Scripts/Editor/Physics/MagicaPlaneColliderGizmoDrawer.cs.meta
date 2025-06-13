@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 59946a67a9bcc5a46b88c5333dd03f40
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/Physics/MagicaPlaneColliderGizmoDrawer.cs
+  uploadId: 639125

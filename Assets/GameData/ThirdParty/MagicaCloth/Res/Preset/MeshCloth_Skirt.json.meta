@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 4b6ff60efdeaf274082bbc9969204862
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/MeshCloth_Skirt.json
+  uploadId: 639125

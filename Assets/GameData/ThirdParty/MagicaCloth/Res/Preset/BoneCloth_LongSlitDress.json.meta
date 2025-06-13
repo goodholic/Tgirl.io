@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: bb0794e09b916364f88fb90bb7792ea8
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/BoneCloth_LongSlitDress.json
+  uploadId: 639125

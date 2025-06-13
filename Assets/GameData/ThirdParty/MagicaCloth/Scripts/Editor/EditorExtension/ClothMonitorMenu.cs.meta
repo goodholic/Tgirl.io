@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 67430756449af5a49a9892802545b292
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/EditorExtension/ClothMonitorMenu.cs
+  uploadId: 639125

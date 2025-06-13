@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e46a55f26bb586243b9db83e1acc4820
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/BoneCloth_DynamicBoneStyle_Tail.json
+  uploadId: 639125

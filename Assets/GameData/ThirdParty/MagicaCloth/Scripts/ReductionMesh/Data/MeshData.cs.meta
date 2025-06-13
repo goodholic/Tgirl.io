@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 3c619b2387cb98242bda05b06a1dd75e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/ReductionMesh/Data/MeshData.cs
+  uploadId: 639125

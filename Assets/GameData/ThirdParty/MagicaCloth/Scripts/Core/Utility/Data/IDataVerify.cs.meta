@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: e6b38d5e93d3e014dad3e85749cc78f1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Utility/Data/IDataVerify.cs
+  uploadId: 639125

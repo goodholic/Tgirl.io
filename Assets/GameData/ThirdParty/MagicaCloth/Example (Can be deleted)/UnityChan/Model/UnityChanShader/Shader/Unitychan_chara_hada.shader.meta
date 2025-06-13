@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ef9d330ed19d73d4fbb480ffa6c36216
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/UnityChan/Model/UnityChanShader/Shader/Unitychan_chara_hada.shader
+  uploadId: 639125

@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: d0522782485b1eb489a2546d8f682f8b
+labels:
+- UnityChan
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/UnityChan/FaceAnimation/face
+    only mask.mask
+  uploadId: 639125

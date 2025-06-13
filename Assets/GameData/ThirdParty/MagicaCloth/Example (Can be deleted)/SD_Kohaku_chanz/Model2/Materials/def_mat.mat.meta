@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 728b341aca224be41ab78d286a5e5c29
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/SD_Kohaku_chanz/Model2/Materials/def_mat.mat
+  uploadId: 639125

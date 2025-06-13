@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: f334d6f6c1f3bdc4d80fecfb460e875a
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/UnityChan/Model/UnityChanShader/Shader/Unitychan_chara_hair_ds.shader
+  uploadId: 639125

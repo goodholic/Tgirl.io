@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c03f99572772ad64f8e617258e70bf3c
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/MeshSpring_Breast.json
+  uploadId: 639125

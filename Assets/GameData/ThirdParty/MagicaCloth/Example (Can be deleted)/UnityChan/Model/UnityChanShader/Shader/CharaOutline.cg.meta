@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: efab37c270e38db4bac4c3014e5b9191
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/UnityChan/Model/UnityChanShader/Shader/CharaOutline.cg
+  uploadId: 639125

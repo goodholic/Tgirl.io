@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: e1b1de6c78c6dee41acf2bd9889049b0
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/BoneCloth_Freedom.json
+  uploadId: 639125

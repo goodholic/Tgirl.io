@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 805ad4223b034d645a2b2be45b2be477
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Physics/Worker/SpringMeshWorker.cs
+  uploadId: 639125

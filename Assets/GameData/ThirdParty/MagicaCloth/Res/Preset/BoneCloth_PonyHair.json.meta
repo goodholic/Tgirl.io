@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c45dbd4b5bf1e8f4494249a4b68c5f82
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/BoneCloth_PonyHair.json
+  uploadId: 639125

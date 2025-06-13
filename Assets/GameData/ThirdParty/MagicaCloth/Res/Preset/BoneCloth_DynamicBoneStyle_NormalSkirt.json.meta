@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: ddcf2c7b2e1949d4fac61711055b37e7
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Res/Preset/BoneCloth_DynamicBoneStyle_NormalSkirt.json
+  uploadId: 639125

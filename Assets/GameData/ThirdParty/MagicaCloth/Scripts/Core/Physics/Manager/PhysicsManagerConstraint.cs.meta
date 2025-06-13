@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 67ea9f2e9eb67344980274101cd2297c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Physics/Manager/PhysicsManagerConstraint.cs
+  uploadId: 639125

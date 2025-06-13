@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: e53054291fd4d2f4f905fd4bd8162fd4
+DefaultImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/UnityChan/Model/UnityChanShader/Shader/CharaSkin.cg
+  uploadId: 639125

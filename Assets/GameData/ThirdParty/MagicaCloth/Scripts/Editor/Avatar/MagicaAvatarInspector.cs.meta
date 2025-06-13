@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 62a04d1f9b97eff4ea1a6129a28e77dc
+timeCreated: 1511964702
+licenseType: Store
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/Avatar/MagicaAvatarInspector.cs
+  uploadId: 639125

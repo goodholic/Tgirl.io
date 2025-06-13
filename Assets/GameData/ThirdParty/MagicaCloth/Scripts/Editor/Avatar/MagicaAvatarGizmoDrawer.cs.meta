@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: cf3e8f3d3536a2848a8a85198861ebec
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/Avatar/MagicaAvatarGizmoDrawer.cs
+  uploadId: 639125

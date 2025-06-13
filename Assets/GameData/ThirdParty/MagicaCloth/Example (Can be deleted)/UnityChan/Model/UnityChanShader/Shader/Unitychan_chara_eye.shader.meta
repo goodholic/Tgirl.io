@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 0f432079edce4ae49a7ec4abfd4ef062
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Example (Can be deleted)/UnityChan/Model/UnityChanShader/Shader/Unitychan_chara_eye.shader
+  uploadId: 639125

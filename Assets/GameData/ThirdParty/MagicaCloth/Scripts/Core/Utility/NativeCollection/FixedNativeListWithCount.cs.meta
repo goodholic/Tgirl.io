@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: f8f40a83df9b4104b88bfcb9cb97dcd6
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Utility/NativeCollection/FixedNativeListWithCount.cs
+  uploadId: 639125

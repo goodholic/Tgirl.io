@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: a2db788b295172947a5a9e3ef62ba780
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/Deformer/DeformerGizmoDrawer.cs
+  uploadId: 639125

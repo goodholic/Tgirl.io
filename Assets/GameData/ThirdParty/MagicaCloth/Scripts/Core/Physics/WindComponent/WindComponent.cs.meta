@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 01a8b5b2cd5cf55409b50b8671836ce2
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Physics/WindComponent/WindComponent.cs
+  uploadId: 639125

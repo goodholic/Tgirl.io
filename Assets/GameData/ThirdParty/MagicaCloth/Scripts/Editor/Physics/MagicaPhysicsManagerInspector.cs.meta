@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 11af83489e629f5418649489e46c8fed
+timeCreated: 1511964702
+licenseType: Store
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Editor/Physics/MagicaPhysicsManagerInspector.cs
+  uploadId: 639125

@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d05b85e0b08cb7441a0d1771b6d2d36f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 160144
+  packageName: Magica Cloth
+  packageVersion: 1.12.13
+  assetPath: Assets/MagicaCloth/Scripts/Core/Physics/Worker/VirtualMeshWorker.cs
+  uploadId: 639125
