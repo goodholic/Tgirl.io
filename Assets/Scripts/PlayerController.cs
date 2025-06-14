@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using UnityEngine.AI;
 using UnityEngine.EventSystems;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Thinksquirrel.CShake;
 using Unity.VisualScripting;
 
@@ -19,7 +21,7 @@ public class PlayerController : DamageableController
     [SerializeField] private GameObject _muzzleFlashPrefab; // 머즐 플래시 효과 프리팹
     [SerializeField] private GameObject _projectilePrefab;  // 발사체 프리팹
     [SerializeField] private Transform _gunSpawnPoint;      // 발사체 생성 위치
-    [SerializeField] private float _attackInterval;         // 공격 실행 간격 (초)
+    [SerializeField] private float _attackInterval = 0.3f;         // 공격 실행 간격 (초)
     [SerializeField] private AudioSource _attackAudioSource;  // 공격 사운드 재생용 AudioSource
     [SerializeField] private AudioClip _attackSoundClip;      // 공격 사운드 클립
 
@@ -33,6 +35,14 @@ public class PlayerController : DamageableController
 
     [SerializeField] private float _dragSensitivityX = 0.1f;  // 드래그 회전 X 민감도
     [SerializeField] private float _dragSensitivityY = 0.1f;  // 드래그 회전 Y 민감도
+    
+    [Header("Auto Aim Settings")]
+    [SerializeField] private float _autoAimRadius = 20f;        // 자동 조준 검색 반경
+    [SerializeField] private float _autoAimAngle = 45f;         // 자동 조준 각도 (정면 기준)
+    [SerializeField] private float _autoAimStrength = 0.8f;     // 자동 조준 강도 (0~1)
+    [SerializeField] private float _autoAimRotationSpeed = 5f;  // 자동 조준 회전 속도
+    [SerializeField] private LayerMask _enemyLayerMask = -1;    // 적 레이어 마스크
+    [SerializeField] private bool _enableAutoAim = true;        // 자동 조준 활성화 여부
     
     [Header("Dash Settings")]
     [SerializeField] private float dashDistance = 3f;  // 뒤로 이동할 거리
@@ -73,6 +83,10 @@ public class PlayerController : DamageableController
     private NavMeshAgent _agent;             // NavMeshAgent 컴포넌트
     private int _rotationTouchId = -1;       // 터치 회전 제어용 터치 ID (-1: 미사용)
     private Vector3 _lastMousePosition = Vector3.zero; // 에디터에서 마우스 드래그용 이전 마우스 위치
+    private float _lastAttackTime = 0f;      // 마지막 공격 시간
+    private Transform _currentAutoAimTarget = null; // 현재 자동 조준 타겟
+    private Coroutine _autoAimCoroutine = null;    // 자동 조준 코루틴
+    private bool _isMouseRotating = false;  // 마우스 오른쪽 버튼으로 회전 중인지 여부
     #endregion
     
     public Transform LookAtTarget { get { return _lookAtTarget; } set { _lookAtTarget = value; } }
@@ -127,22 +141,24 @@ public class PlayerController : DamageableController
 
     private void OnEnable()
     {
-        if (_attackInterval > 0)
-        {
-            InvokeRepeating(nameof(Attack), 0.3f, _attackInterval);
-        }
+        // 자동 공격 제거됨
     }
 
     private void OnDisable()
     {
-        if (_attackInterval > 0)
+        // 자동 조준 코루틴 중지
+        if (_autoAimCoroutine != null)
         {
-            CancelInvoke(nameof(Attack));
+            StopCoroutine(_autoAimCoroutine);
+            _autoAimCoroutine = null;
         }
     }
 
     private void Update()
     {
+        HandleKeyboardInput();
+        HandleManualAttack();
+        
 #if UNITY_EDITOR
         HandleRotationByMouse();
 #else
@@ -178,15 +194,86 @@ public class PlayerController : DamageableController
     }
     #endregion
 
+    #region Input Handling
+    /// <summary>
+    /// 키보드 입력 처리
+    /// </summary>
+    private void HandleKeyboardInput()
+    {
+        if (isDead) return;
+        
+        // Q - 스킬 1
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            OnSkill1Button();
+        }
+        
+        // E - 스킬 2
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            OnSkill2Button();
+        }
+        
+        // R - 궁극기
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            OnUltimateButton();
+        }
+        
+        // Shift - 백대쉬
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            OnBackDashButton();
+        }
+    }
+    
+    /// <summary>
+    /// 수동 공격 처리 (마우스 왼쪽 클릭)
+    /// </summary>
+    private void HandleManualAttack()
+    {
+        if (isDead) return;
+        
+        // 마우스 왼쪽 버튼 클릭 시 공격
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        {
+            if (Time.time - _lastAttackTime >= _attackInterval)
+            {
+                Attack();
+                _lastAttackTime = Time.time;
+            }
+        }
+    }
+    #endregion
+
     #region Movement & Rotation
     /// <summary>
-    /// 조이스틱 입력을 기반으로 NavMeshAgent를 이용해 플레이어를 이동시킵니다.
+    /// 조이스틱 또는 키보드 입력을 기반으로 NavMeshAgent를 이용해 플레이어를 이동시킵니다.
     /// </summary>
     private void HandleMovement()
     {
-        Vector2 input = _joystick.InputDirection;
+        Vector2 input = Vector2.zero;
+        
+        // 키보드 입력 처리 (WASD)
+        if (Input.GetKey(KeyCode.W)) input.y += 1f;
+        if (Input.GetKey(KeyCode.S)) input.y -= 1f;
+        if (Input.GetKey(KeyCode.A)) input.x -= 1f;
+        if (Input.GetKey(KeyCode.D)) input.x += 1f;
+        
+        // 조이스틱 입력이 있으면 조이스틱 우선
+        if (_joystick.InputDirection.sqrMagnitude > 0.01f)
+        {
+            input = _joystick.InputDirection;
+        }
+        
         if (input.sqrMagnitude > 0.01f)
         {
+            // 입력 정규화
+            if (input.sqrMagnitude > 1f)
+            {
+                input.Normalize();
+            }
+            
             // 카메라 기준 전후 좌우 방향 계산 (수평 성분만 사용)
             Vector3 camForward = Camera.main.transform.forward;
             camForward.y = 0f;
@@ -267,41 +354,41 @@ public class PlayerController : DamageableController
     }
 
     /// <summary>
-    /// 에디터 환경에서 마우스 드래그로 플레이어 회전을 처리합니다.
+    /// 에디터 환경에서 마우스 오른쪽 버튼 드래그로 플레이어 회전을 처리합니다.
     /// </summary>
     private void HandleRotationByMouse()
     {
-        if (Input.GetMouseButtonDown(0))
+        // 마우스 오른쪽 버튼 누름
+        if (Input.GetMouseButtonDown(1))
         {
-            if (Input.mousePosition.x > Screen.width / 2 && !EventSystem.current.IsPointerOverGameObject())
+            if (!EventSystem.current.IsPointerOverGameObject())
             {
+                _isMouseRotating = true;
                 _lastMousePosition = Input.mousePosition;
             }
-            else
-            {
-                _lastMousePosition = Vector3.zero;
-            }
         }
-        if (Input.GetMouseButton(0))
+        
+        // 마우스 오른쪽 버튼 드래그 중
+        if (Input.GetMouseButton(1) && _isMouseRotating)
         {
-            if (_lastMousePosition != Vector3.zero)
-            {
-                Vector3 delta = Input.mousePosition - _lastMousePosition;
-                float deltaX = delta.x * _dragSensitivityX;
-                transform.Rotate(0f, deltaX, 0f);
+            Vector3 delta = Input.mousePosition - _lastMousePosition;
+            float deltaX = delta.x * _dragSensitivityX;
+            transform.Rotate(0f, deltaX, 0f);
 
-                float deltaY = delta.y * _dragSensitivityY;
-                if (_lookAtTarget != null)
-                {
-                    Vector3 pos = _lookAtTarget.position;
-                    pos.y = Mathf.Clamp(pos.y + deltaY, _minLookAtY, _maxLookAtY);
-                    _lookAtTarget.position = pos;
-                }
-                _lastMousePosition = Input.mousePosition;
+            float deltaY = delta.y * _dragSensitivityY;
+            if (_lookAtTarget != null)
+            {
+                Vector3 pos = _lookAtTarget.position;
+                pos.y = Mathf.Clamp(pos.y + deltaY, _minLookAtY, _maxLookAtY);
+                _lookAtTarget.position = pos;
             }
+            _lastMousePosition = Input.mousePosition;
         }
-        if (Input.GetMouseButtonUp(0))
+        
+        // 마우스 오른쪽 버튼 뗌
+        if (Input.GetMouseButtonUp(1))
         {
+            _isMouseRotating = false;
             _lastMousePosition = Vector3.zero;
         }
     }
@@ -309,21 +396,83 @@ public class PlayerController : DamageableController
 
     #region Animation & Attack
     /// <summary>
-    /// 조이스틱 사용 여부에 따라 애니메이터 파라미터를 업데이트합니다.
+    /// 조이스틱 또는 키보드 사용 여부에 따라 애니메이터 파라미터를 업데이트합니다.
     /// </summary>
     private void UpdateAnimation()
     {
+        Vector2 input = Vector2.zero;
+        
+        // 키보드 입력
+        if (Input.GetKey(KeyCode.W)) input.y += 1f;
+        if (Input.GetKey(KeyCode.S)) input.y -= 1f;
+        if (Input.GetKey(KeyCode.A)) input.x -= 1f;
+        if (Input.GetKey(KeyCode.D)) input.x += 1f;
+        
+        // 조이스틱 입력이 있으면 조이스틱 우선
         if (_joystick.IsActive)
         {
-            Vector2 input = _joystick.InputDirection;
-            _playerAnimator.SetFloat("X", input.x);
-            _playerAnimator.SetFloat("Y", input.y);
+            input = _joystick.InputDirection;
         }
-        else
+        
+        _playerAnimator.SetFloat("X", input.x);
+        _playerAnimator.SetFloat("Y", input.y);
+    }
+
+    /// <summary>
+    /// 자동 조준을 적용하여 가장 적합한 적을 찾습니다.
+    /// </summary>
+    private Transform GetAutoAimTarget()
+    {
+        if (!_enableAutoAim) return null;
+        
+        Transform bestTarget = null;
+        float bestScore = float.MaxValue;
+        
+        // 범위 내의 모든 적을 검색
+        Collider[] enemies = Physics.OverlapSphere(transform.position, _autoAimRadius, _enemyLayerMask);
+        
+        foreach (Collider enemy in enemies)
         {
-            _playerAnimator.SetFloat("X", 0f);
-            _playerAnimator.SetFloat("Y", 0f);
+            if (!enemy.CompareTag("Enemy")) continue;
+            
+            // 죽은 적은 제외
+            DamageableController damageable = enemy.GetComponent<DamageableController>();
+            if (damageable != null && damageable.isDead) continue;
+            
+            Vector3 directionToEnemy = enemy.transform.position - transform.position;
+            float distanceToEnemy = directionToEnemy.magnitude;
+            
+            // 플레이어 정면과의 각도 계산
+            float angle = Vector3.Angle(transform.forward, directionToEnemy);
+            
+            // 자동 조준 각도 내에 있는지 확인
+            if (angle > _autoAimAngle) continue;
+            
+            // 화면 중앙과의 거리 계산 (화면에 보이는 적 우선)
+            Vector3 screenPoint = Camera.main.WorldToViewportPoint(enemy.transform.position);
+            
+            // 화면 밖의 적은 제외
+            if (screenPoint.z <= 0 || screenPoint.x < 0 || screenPoint.x > 1 || screenPoint.y < 0 || screenPoint.y > 1)
+                continue;
+            
+            float screenDistance = Vector2.Distance(new Vector2(screenPoint.x, screenPoint.y), new Vector2(0.5f, 0.5f));
+            
+            // 점수 계산 (낮을수록 좋음)
+            // 화면 중앙에 가깝고, 거리가 가까우며, 정면에 가까운 적을 우선시
+            float angleWeight = angle / _autoAimAngle; // 0~1
+            float distanceWeight = distanceToEnemy / _autoAimRadius; // 0~1
+            float screenWeight = screenDistance; // 0~약 0.7
+            
+            float score = (angleWeight * 0.4f) + (distanceWeight * 0.3f) + (screenWeight * 0.3f);
+            
+            if (score < bestScore)
+            {
+                bestScore = score;
+                bestTarget = enemy.transform;
+            }
         }
+        
+        return bestTarget;
     }
 
     /// <summary>
@@ -334,6 +483,33 @@ public class PlayerController : DamageableController
         if (isDead)
             return;
 
+        // 자동 조준 대상 찾기
+        Transform autoAimTarget = GetAutoAimTarget();
+        
+        // 새로운 타겟이 발견되면 자동 조준 시작
+        if (autoAimTarget != null && autoAimTarget != _currentAutoAimTarget)
+        {
+            _currentAutoAimTarget = autoAimTarget;
+            
+            // 기존 자동 조준 코루틴 중지
+            if (_autoAimCoroutine != null)
+            {
+                StopCoroutine(_autoAimCoroutine);
+            }
+            
+            // 새로운 자동 조준 코루틴 시작
+            _autoAimCoroutine = StartCoroutine(AutoAimRoutine());
+        }
+        else if (autoAimTarget == null)
+        {
+            _currentAutoAimTarget = null;
+            if (_autoAimCoroutine != null)
+            {
+                StopCoroutine(_autoAimCoroutine);
+                _autoAimCoroutine = null;
+            }
+        }
+
         if (_muzzleFlashPrefab != null && _gunSpawnPoint != null)
         {
             Instantiate(_muzzleFlashPrefab, _gunSpawnPoint.position, _gunSpawnPoint.rotation);
@@ -343,9 +519,33 @@ public class PlayerController : DamageableController
             _attackAudioSource.clip = _attackSoundClip;
             _attackAudioSource.Play();
 
-            Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            RaycastHit hit;
-            Vector3 targetPoint = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+            Vector3 targetPoint;
+            
+            // 자동 조준 시스템 적용
+            if (_currentAutoAimTarget != null && _currentAutoAimTarget.gameObject.activeInHierarchy)
+            {
+                // 자동 조준 대상이 있을 때
+                Vector3 targetPosition = _currentAutoAimTarget.position + Vector3.up * 0.8f; // 적의 몸통 높이를 타겟으로
+                
+                // 화면 중앙 방향과 자동 조준 방향을 보간
+                Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+                RaycastHit hit;
+                Vector3 screenTarget = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+                
+                // 자동 조준 방향과 화면 중앙 방향을 보간
+                Vector3 autoAimDirection = (targetPosition - _gunSpawnPoint.position).normalized;
+                Vector3 screenDirection = (screenTarget - _gunSpawnPoint.position).normalized;
+                Vector3 finalDirection = Vector3.Lerp(screenDirection, autoAimDirection, _autoAimStrength);
+                
+                targetPoint = _gunSpawnPoint.position + finalDirection * 100f;
+            }
+            else
+            {
+                // 자동 조준 대상이 없으면 일반 조준
+                Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+                RaycastHit hit;
+                targetPoint = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+            }
 
             GameObject bullet = Instantiate(_projectilePrefab, _gunSpawnPoint.position, Quaternion.identity);
             bullet.transform.LookAt(targetPoint);
@@ -360,6 +560,41 @@ public class PlayerController : DamageableController
 
             CameraShake.ShakeAll();
         }
+    }
+    
+    /// <summary>
+    /// 자동 조준 코루틴: 적을 향해 카메라를 부드럽게 회전시킵니다.
+    /// </summary>
+    private IEnumerator AutoAimRoutine()
+    {
+        while (_currentAutoAimTarget != null && _currentAutoAimTarget.gameObject.activeInHierarchy)
+        {
+            // 적이 죽었거나 범위를 벗어났으면 중지
+            DamageableController targetDamageable = _currentAutoAimTarget.GetComponent<DamageableController>();
+            float distance = Vector3.Distance(transform.position, _currentAutoAimTarget.position);
+            
+            if ((targetDamageable != null && targetDamageable.isDead) || distance > _autoAimRadius)
+            {
+                _currentAutoAimTarget = null;
+                _autoAimCoroutine = null;
+                yield break;
+            }
+            
+            // 적을 향한 방향 계산
+            Vector3 directionToTarget = (_currentAutoAimTarget.position - transform.position).normalized;
+            directionToTarget.y = 0; // 수평 회전만
+            
+            // 목표 회전 계산
+            Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
+            
+            // 부드럽게 회전
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _autoAimRotationSpeed * Time.deltaTime);
+            
+            yield return null;
+        }
+        
+        _currentAutoAimTarget = null;
+        _autoAimCoroutine = null;
     }
     #endregion
     
@@ -469,10 +704,19 @@ public class PlayerController : DamageableController
                 _attackAudioSource.clip = _attackSoundClip;
                 _attackAudioSource.Play();
                 
-                // 발사체 생성
-                Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-                RaycastHit hit;
-                Vector3 targetPoint = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+                // 자동 조준 적용
+                Vector3 targetPoint;
+                if (_currentAutoAimTarget != null && _currentAutoAimTarget.gameObject.activeInHierarchy)
+                {
+                    Vector3 targetPosition = _currentAutoAimTarget.position + Vector3.up * 0.8f;
+                    targetPoint = targetPosition;
+                }
+                else
+                {
+                    Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+                    RaycastHit hit;
+                    targetPoint = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+                }
                 
                 GameObject bullet = Instantiate(_projectilePrefab, _gunSpawnPoint.position, Quaternion.identity);
                 bullet.transform.LookAt(targetPoint);
@@ -609,9 +853,11 @@ public class PlayerController : DamageableController
     /// </summary>
     protected override void Die()
     {
-        if (_attackInterval > 0)
+        // 자동 조준 코루틴 중지
+        if (_autoAimCoroutine != null)
         {
-            CancelInvoke(nameof(Attack));
+            StopCoroutine(_autoAimCoroutine);
+            _autoAimCoroutine = null;
         }
 
         isDead = true;
