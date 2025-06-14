@@ -8,12 +8,23 @@ using System.Linq;
 using Thinksquirrel.CShake;
 using Unity.VisualScripting;
 
+// 캐릭터 타입 열거형 추가
+public enum CharacterType
+{
+    Shotgun,    // 샷건: 높은 데미지, 짧은 사거리, 보통 공격속도
+    Bazooka,    // 바주카: 높은 데미지, 긴 사거리, 느린 공격속도
+    Sword       // 검: 일반 데미지, 빠른 공격속도, 근접
+}
+
 /// <summary>
 /// 플레이어의 이동, 공격, 회전, 애니메이션 및 IK를 처리하는 컨트롤러
 /// </summary>
 public class PlayerController : DamageableController
 {
     #region Inspector Fields
+    [Header("Character Type")]
+    [SerializeField] private CharacterType _characterType = CharacterType.Shotgun;
+    
     [SerializeField] private bool _isInit;
     [SerializeField] private Joystick _joystick;          // 이동 조이스틱
     [SerializeField] private float _moveSpeed = 5f;         // 이동 속도 (NavMeshAgent 속도)
@@ -24,6 +35,24 @@ public class PlayerController : DamageableController
     [SerializeField] private float _attackInterval = 0.3f;         // 공격 실행 간격 (초)
     [SerializeField] private AudioSource _attackAudioSource;  // 공격 사운드 재생용 AudioSource
     [SerializeField] private AudioClip _attackSoundClip;      // 공격 사운드 클립
+    
+    [Header("Character Type Stats")]
+    [SerializeField] private float _shotgunDamageMultiplier = 1.5f;
+    [SerializeField] private float _shotgunRange = 10f;
+    [SerializeField] private float _shotgunAttackInterval = 0.5f;
+    [SerializeField] private int _shotgunPelletCount = 5; // 산탄 개수
+    [SerializeField] private float _shotgunSpreadAngle = 15f; // 산탄 퍼짐 각도
+    
+    [SerializeField] private float _bazookaDamageMultiplier = 2f;
+    [SerializeField] private float _bazookaRange = 30f;
+    [SerializeField] private float _bazookaAttackInterval = 1.5f;
+    [SerializeField] private GameObject _bazookaExplosionPrefab; // 폭발 이펙트
+    [SerializeField] private float _bazookaExplosionRadius = 5f;
+    
+    [SerializeField] private float _swordDamageMultiplier = 1f;
+    [SerializeField] private float _swordAttackInterval = 0.2f;
+    [SerializeField] private float _swordAttackRange = 3f;
+    [SerializeField] private GameObject _swordSlashEffectPrefab; // 검 휘두르기 이펙트
 
     [SerializeField] private Animator _playerAnimator;      // 플레이어 애니메이터
     [SerializeField] private Transform _lookAtTarget;         // IK LookAt 대상
@@ -43,10 +72,6 @@ public class PlayerController : DamageableController
     [SerializeField] private float _autoAimRotationSpeed = 5f;  // 자동 조준 회전 속도
     [SerializeField] private LayerMask _enemyLayerMask = -1;    // 적 레이어 마스크
     [SerializeField] private bool _enableAutoAim = true;        // 자동 조준 활성화 여부
-    
-    [Header("Auto Attack Settings")]
-    [SerializeField] private bool _enableAutoAttack = true;     // 자동 공격 활성화 여부
-    [SerializeField] private float _autoAttackRange = 15f;      // 자동 공격 범위
     
     [Header("Dash Settings")]
     [SerializeField] private float dashDistance = 3f;  // 뒤로 이동할 거리
@@ -95,11 +120,16 @@ public class PlayerController : DamageableController
     private float _lastAttackTime = 0f;      // 마지막 공격 시간
     private Transform _currentAutoAimTarget = null; // 현재 자동 조준 타겟
     private Coroutine _autoAimCoroutine = null;    // 자동 조준 코루틴
-    private Coroutine _autoAttackCoroutine = null; // 자동 공격 코루틴
     private bool _isMouseRotating = false;  // 마우스 오른쪽 버튼으로 회전 중인지 여부
+    
+    // 캐릭터 타입별 실제 적용 값들
+    private float _actualAttackInterval;
+    private float _actualDamageMultiplier;
+    private float _actualAttackRange;
     #endregion
     
     public Transform LookAtTarget { get { return _lookAtTarget; } set { _lookAtTarget = value; } }
+    public CharacterType CharacterTypeProperty => _characterType;
 
     #region Unity Methods
     protected override void Awake()
@@ -142,6 +172,9 @@ public class PlayerController : DamageableController
             _agent.speed = _moveSpeed;
             _agent.updateRotation = false; // 직접 회전 제어
         }
+        
+        // 캐릭터 타입별 스탯 초기화
+        InitializeCharacterTypeStats();
     }
 
     private void Start()
@@ -157,15 +190,7 @@ public class PlayerController : DamageableController
 
     private void OnEnable()
     {
-        // 자동 공격 코루틴 시작
-        if (_enableAutoAttack)
-        {
-            if (_autoAttackCoroutine != null)
-            {
-                StopCoroutine(_autoAttackCoroutine);
-            }
-            _autoAttackCoroutine = StartCoroutine(AutoAttackRoutine());
-        }
+        // 자동 공격 제거됨
     }
 
     private void OnDisable()
@@ -175,13 +200,6 @@ public class PlayerController : DamageableController
         {
             StopCoroutine(_autoAimCoroutine);
             _autoAimCoroutine = null;
-        }
-        
-        // 자동 공격 코루틴 중지
-        if (_autoAttackCoroutine != null)
-        {
-            StopCoroutine(_autoAttackCoroutine);
-            _autoAttackCoroutine = null;
         }
     }
 
@@ -221,6 +239,38 @@ public class PlayerController : DamageableController
                 _playerAnimator.SetIKPosition(AvatarIKGoal.LeftHand, _leftHandTarget.position);
                 _playerAnimator.SetIKRotation(AvatarIKGoal.LeftHand, _leftHandTarget.rotation);
             }
+        }
+    }
+    #endregion
+    
+    #region Character Type Initialization
+    /// <summary>
+    /// 캐릭터 타입에 따른 스탯 초기화
+    /// </summary>
+    private void InitializeCharacterTypeStats()
+    {
+        switch (_characterType)
+        {
+            case CharacterType.Shotgun:
+                _actualAttackInterval = _shotgunAttackInterval;
+                _actualDamageMultiplier = _shotgunDamageMultiplier;
+                _actualAttackRange = _shotgunRange;
+                _autoAimRadius = _shotgunRange;
+                break;
+                
+            case CharacterType.Bazooka:
+                _actualAttackInterval = _bazookaAttackInterval;
+                _actualDamageMultiplier = _bazookaDamageMultiplier;
+                _actualAttackRange = _bazookaRange;
+                _autoAimRadius = _bazookaRange;
+                break;
+                
+            case CharacterType.Sword:
+                _actualAttackInterval = _swordAttackInterval;
+                _actualDamageMultiplier = _swordDamageMultiplier;
+                _actualAttackRange = _swordAttackRange;
+                _enableAutoAim = false; // 검은 자동 조준 비활성화
+                break;
         }
     }
     #endregion
@@ -279,7 +329,7 @@ public class PlayerController : DamageableController
         // 마우스 왼쪽 버튼 클릭 시 공격
         if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
-            if (Time.time - _lastAttackTime >= _attackInterval)
+            if (Time.time - _lastAttackTime >= _actualAttackInterval)
             {
                 Attack();
                 _lastAttackTime = Time.time;
@@ -461,63 +511,6 @@ public class PlayerController : DamageableController
     }
 
     /// <summary>
-    /// 자동 공격 코루틴
-    /// </summary>
-    private IEnumerator AutoAttackRoutine()
-    {
-        while (true)
-        {
-            if (!isDead && _enableAutoAttack)
-            {
-                // 자동 공격 범위 내에 적이 있는지 확인
-                Transform nearestEnemy = GetNearestEnemyInRange(_autoAttackRange);
-                
-                if (nearestEnemy != null)
-                {
-                    // 공격 쿨타임 체크
-                    if (Time.time - _lastAttackTime >= _attackInterval)
-                    {
-                        Attack();
-                        _lastAttackTime = Time.time;
-                    }
-                }
-            }
-            
-            yield return new WaitForSeconds(0.1f); // 0.1초마다 체크
-        }
-    }
-
-    /// <summary>
-    /// 자동 공격 범위 내에서 가장 가까운 적을 찾습니다.
-    /// </summary>
-    private Transform GetNearestEnemyInRange(float range)
-    {
-        Transform nearestEnemy = null;
-        float nearestDistance = float.MaxValue;
-        
-        Collider[] enemies = Physics.OverlapSphere(transform.position, range, _enemyLayerMask);
-        
-        foreach (Collider enemy in enemies)
-        {
-            if (!enemy.CompareTag("Enemy")) continue;
-            
-            // 죽은 적은 제외
-            DamageableController damageable = enemy.GetComponent<DamageableController>();
-            if (damageable != null && damageable.isDead) continue;
-            
-            float distance = Vector3.Distance(transform.position, enemy.transform.position);
-            
-            if (distance < nearestDistance)
-            {
-                nearestDistance = distance;
-                nearestEnemy = enemy.transform;
-            }
-        }
-        
-        return nearestEnemy;
-    }
-
-    /// <summary>
     /// 자동 조준을 적용하여 가장 적합한 적을 찾습니다.
     /// </summary>
     private Transform GetAutoAimTarget()
@@ -575,13 +568,32 @@ public class PlayerController : DamageableController
     }
 
     /// <summary>
-    /// 공격 실행: 머즐 플래시 효과 재생, 발사체 생성 및 사운드/카메라 쉐이크 적용
+    /// 공격 실행: 캐릭터 타입에 따라 다른 공격 방식 적용
     /// </summary>
     public void Attack()
     {
         if (isDead)
             return;
 
+        switch (_characterType)
+        {
+            case CharacterType.Shotgun:
+                ShotgunAttack();
+                break;
+            case CharacterType.Bazooka:
+                BazookaAttack();
+                break;
+            case CharacterType.Sword:
+                SwordAttack();
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 샷건 공격: 산탄 형태로 여러 발사체 발사
+    /// </summary>
+    private void ShotgunAttack()
+    {
         // 자동 조준 대상 찾기
         Transform autoAimTarget = GetAutoAimTarget();
         
@@ -613,6 +625,103 @@ public class PlayerController : DamageableController
         {
             Instantiate(_muzzleFlashPrefab, _gunSpawnPoint.position, _gunSpawnPoint.rotation);
         }
+        
+        if (_projectilePrefab != null && _gunSpawnPoint != null)
+        {
+            _attackAudioSource.clip = _attackSoundClip;
+            _attackAudioSource.Play();
+
+            // 샷건은 여러 발의 산탄을 발사
+            for (int i = 0; i < _shotgunPelletCount; i++)
+            {
+                Vector3 targetPoint;
+                
+                // 자동 조준 시스템 적용
+                if (_currentAutoAimTarget != null && _currentAutoAimTarget.gameObject.activeInHierarchy)
+                {
+                    // 자동 조준 대상이 있을 때
+                    Vector3 targetPosition = _currentAutoAimTarget.position + Vector3.up * 0.8f; // 적의 몸통 높이를 타겟으로
+                    
+                    // 화면 중앙 방향과 자동 조준 방향을 보간
+                    Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+                    RaycastHit hit;
+                    Vector3 screenTarget = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+                    
+                    // 자동 조준 방향과 화면 중앙 방향을 보간
+                    Vector3 autoAimDirection = (targetPosition - _gunSpawnPoint.position).normalized;
+                    Vector3 screenDirection = (screenTarget - _gunSpawnPoint.position).normalized;
+                    Vector3 finalDirection = Vector3.Lerp(screenDirection, autoAimDirection, _autoAimStrength);
+                    
+                    targetPoint = _gunSpawnPoint.position + finalDirection * 100f;
+                }
+                else
+                {
+                    // 자동 조준 대상이 없으면 일반 조준
+                    Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+                    RaycastHit hit;
+                    targetPoint = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+                }
+
+                // 산탄 퍼짐 효과 추가
+                float spreadX = Random.Range(-_shotgunSpreadAngle, _shotgunSpreadAngle);
+                float spreadY = Random.Range(-_shotgunSpreadAngle, _shotgunSpreadAngle);
+                Vector3 spread = new Vector3(spreadX, spreadY, 0f);
+                
+                GameObject bullet = Instantiate(_projectilePrefab, _gunSpawnPoint.position, Quaternion.identity);
+                bullet.transform.LookAt(targetPoint);
+                bullet.transform.Rotate(spread);
+
+                Projectile proj = bullet.GetComponent<Projectile>();
+                int currentDamage = (int)((proj.Damage + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
+                if (proj != null)
+                {
+                    proj.userType = UserType.Player;
+                    proj.Damage = currentDamage;
+                    proj.owner = this; // 발사체 소유자 설정
+                }
+            }
+
+            CameraShake.ShakeAll();
+        }
+    }
+
+    /// <summary>
+    /// 바주카 공격: 폭발하는 투사체 발사
+    /// </summary>
+    private void BazookaAttack()
+    {
+        // 자동 조준 대상 찾기
+        Transform autoAimTarget = GetAutoAimTarget();
+        
+        // 새로운 타겟이 발견되면 자동 조준 시작
+        if (autoAimTarget != null && autoAimTarget != _currentAutoAimTarget)
+        {
+            _currentAutoAimTarget = autoAimTarget;
+            
+            // 기존 자동 조준 코루틴 중지
+            if (_autoAimCoroutine != null)
+            {
+                StopCoroutine(_autoAimCoroutine);
+            }
+            
+            // 새로운 자동 조준 코루틴 시작
+            _autoAimCoroutine = StartCoroutine(AutoAimRoutine());
+        }
+        else if (autoAimTarget == null)
+        {
+            _currentAutoAimTarget = null;
+            if (_autoAimCoroutine != null)
+            {
+                StopCoroutine(_autoAimCoroutine);
+                _autoAimCoroutine = null;
+            }
+        }
+
+        if (_muzzleFlashPrefab != null && _gunSpawnPoint != null)
+        {
+            Instantiate(_muzzleFlashPrefab, _gunSpawnPoint.position, _gunSpawnPoint.rotation);
+        }
+        
         if (_projectilePrefab != null && _gunSpawnPoint != null)
         {
             _attackAudioSource.clip = _attackSoundClip;
@@ -650,16 +759,74 @@ public class PlayerController : DamageableController
             bullet.transform.LookAt(targetPoint);
 
             Projectile proj = bullet.GetComponent<Projectile>();
-            int currentDamage = proj.Damage + (int)UpgradeManager.GetDamageBonus();
+            int currentDamage = (int)((proj.Damage + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
             if (proj != null)
             {
                 proj.userType = UserType.Player;
                 proj.Damage = currentDamage;
                 proj.owner = this; // 발사체 소유자 설정
+                
+                // 바주카 특수 효과: 폭발 이펙트 추가
+                StartCoroutine(BazookaExplosionOnImpact(bullet));
             }
 
             CameraShake.ShakeAll();
         }
+    }
+
+    /// <summary>
+    /// 바주카 폭발 효과 코루틴
+    /// </summary>
+    private IEnumerator BazookaExplosionOnImpact(GameObject projectile)
+    {
+        // 발사체가 파괴될 때까지 대기
+        while (projectile != null)
+        {
+            yield return null;
+        }
+        
+        // 여기에 폭발 효과 구현 (실제로는 Projectile 스크립트에서 처리하는 것이 좋음)
+    }
+
+    /// <summary>
+    /// 검 공격: 근접 범위 공격
+    /// </summary>
+    private void SwordAttack()
+    {
+        if (_swordSlashEffectPrefab != null)
+        {
+            Instantiate(_swordSlashEffectPrefab, transform.position + transform.forward * 1.5f, transform.rotation);
+        }
+        
+        _attackAudioSource.clip = _attackSoundClip;
+        _attackAudioSource.Play();
+        
+        // 검 휘두르기 애니메이션 트리거
+        _playerAnimator.SetTrigger("SwordAttack");
+        
+        // 전방 범위 내의 모든 적에게 데미지
+        Collider[] enemies = Physics.OverlapSphere(transform.position + transform.forward * (_swordAttackRange * 0.5f), _swordAttackRange);
+        foreach (Collider enemy in enemies)
+        {
+            if (enemy.CompareTag("Enemy"))
+            {
+                // 전방 각도 체크
+                Vector3 directionToEnemy = (enemy.transform.position - transform.position).normalized;
+                float angle = Vector3.Angle(transform.forward, directionToEnemy);
+                
+                if (angle < 90f) // 전방 180도 범위
+                {
+                    DamageableController target = enemy.GetComponent<DamageableController>();
+                    if (target != null && !target.isDead)
+                    {
+                        int damage = (int)((10 + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
+                        target.TakeDamage(damage);
+                    }
+                }
+            }
+        }
+        
+        CameraShake.ShakeAll();
     }
     
     /// <summary>
@@ -791,47 +958,8 @@ public class PlayerController : DamageableController
         {
             if (isDead) break;
             
-            // 기존 Attack 메서드의 로직을 활용
-            if (_projectilePrefab != null && _gunSpawnPoint != null)
-            {
-                // 머즐 플래시
-                if (_muzzleFlashPrefab != null)
-                {
-                    Instantiate(_muzzleFlashPrefab, _gunSpawnPoint.position, _gunSpawnPoint.rotation);
-                }
-                
-                // 사운드
-                _attackAudioSource.clip = _attackSoundClip;
-                _attackAudioSource.Play();
-                
-                // 자동 조준 적용
-                Vector3 targetPoint;
-                if (_currentAutoAimTarget != null && _currentAutoAimTarget.gameObject.activeInHierarchy)
-                {
-                    Vector3 targetPosition = _currentAutoAimTarget.position + Vector3.up * 0.8f;
-                    targetPoint = targetPosition;
-                }
-                else
-                {
-                    Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-                    RaycastHit hit;
-                    targetPoint = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
-                }
-                
-                GameObject bullet = Instantiate(_projectilePrefab, _gunSpawnPoint.position, Quaternion.identity);
-                bullet.transform.LookAt(targetPoint);
-                
-                Projectile proj = bullet.GetComponent<Projectile>();
-                int currentDamage = proj.Damage + (int)UpgradeManager.GetDamageBonus();
-                if (proj != null)
-                {
-                    proj.userType = UserType.Player;
-                    proj.Damage = currentDamage;
-                    proj.owner = this; // 발사체 소유자 설정
-                }
-                
-                CameraShake.ShakeAll();
-            }
+            // 캐릭터 타입에 따른 공격 실행
+            Attack();
             
             yield return new WaitForSeconds(skill2BulletInterval);
         }
@@ -959,13 +1087,6 @@ public class PlayerController : DamageableController
         {
             StopCoroutine(_autoAimCoroutine);
             _autoAimCoroutine = null;
-        }
-        
-        // 자동 공격 코루틴 중지
-        if (_autoAttackCoroutine != null)
-        {
-            StopCoroutine(_autoAttackCoroutine);
-            _autoAttackCoroutine = null;
         }
         
         // GameManager에 플레이어 사망 알림 (PvP 킬 처리)
