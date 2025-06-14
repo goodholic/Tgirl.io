@@ -44,9 +44,9 @@ namespace MagicaCloth
             {
                 if (instance == null)
                 {
-                    // FindObjectOfTypeはそれなりに負荷がかかるので注意！
+                    // FindFirstObjectByTypeはそれなりに負荷がかかるので注意！
                     // 非アクティブのオブジェクトは発見できないので注意！
-                    instance = FindObjectOfType<T>();
+                    instance = FindFirstObjectByType<T>();
 
                     if (instance == null && Application.isPlaying)
                     {
