@@ -77,6 +77,11 @@ public class PlayerController : DamageableController
     
     // 스킬 캔슬 관련
     private Coroutine currentSkillCoroutine = null;
+    
+    [Header("Player Settings")]
+    [SerializeField] private string _playerName = "Player"; // 플레이어 이름
+    [SerializeField] private bool _isAI = false; // AI 플레이어인지 여부
+    private PlayerController _lastAttacker; // 마지막으로 공격한 플레이어
     #endregion
 
     #region Private Fields
@@ -137,6 +142,12 @@ public class PlayerController : DamageableController
     private void Start()
     {
         Application.targetFrameRate = 60;
+        
+        // GameManager에 플레이어 등록
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RegisterPlayer(this, _playerName);
+        }
     }
 
     private void OnEnable()
@@ -193,6 +204,17 @@ public class PlayerController : DamageableController
         }
     }
     #endregion
+    
+    public override void TakeDamage(float damage)
+    {
+        // 데미지 소스 추적 (임시로 현재 플레이어로 설정, 실제로는 Projectile에서 설정해야 함)
+        base.TakeDamage(damage);
+    }
+    
+    public void SetLastAttacker(PlayerController attacker)
+    {
+        _lastAttacker = attacker;
+    }
 
     #region Input Handling
     /// <summary>
@@ -556,6 +578,7 @@ public class PlayerController : DamageableController
             {
                 proj.userType = UserType.Player;
                 proj.Damage = currentDamage;
+                proj.owner = this; // 발사체 소유자 설정
             }
 
             CameraShake.ShakeAll();
@@ -727,6 +750,7 @@ public class PlayerController : DamageableController
                 {
                     proj.userType = UserType.Player;
                     proj.Damage = currentDamage;
+                    proj.owner = this; // 발사체 소유자 설정
                 }
                 
                 CameraShake.ShakeAll();
@@ -859,6 +883,12 @@ public class PlayerController : DamageableController
             StopCoroutine(_autoAimCoroutine);
             _autoAimCoroutine = null;
         }
+        
+        // GameManager에 플레이어 사망 알림 (PvP 킬 처리)
+        if (GameManager.Instance != null && _lastAttacker != null && _lastAttacker != this)
+        {
+            GameManager.Instance.AddPlayerKill(_lastAttacker, this);
+        }
 
         isDead = true;
         animator.SetBool("isDie", true);
@@ -894,7 +924,12 @@ public class PlayerController : DamageableController
                 mat.SetFloat("_Cutout", 1f);
             }
         }
-        PlayerManager.Instance.Die();
+        
+        // 현재 플레이어가 죽었을 때만 게임오버 처리
+        if (this == PlayerManager.Instance.curPlayer)
+        {
+            PlayerManager.Instance.Die();
+        }
     }
     #endregion
 }

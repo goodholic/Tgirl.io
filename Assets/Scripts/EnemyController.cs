@@ -17,6 +17,7 @@ public class EnemyController : DamageableController
     private NavMeshAgent _agent;                                   // NavMeshAgent 컴포넌트
     private float _lastAttackTime = 0f;                            // 마지막 공격 시각 기록
     private bool _isAttacking = false;                             // 공격 중 여부
+    private PlayerController _lastAttacker;                        // 마지막으로 공격한 플레이어 추적
 
     private void Start()
     {
@@ -75,6 +76,17 @@ public class EnemyController : DamageableController
             _agent.isStopped = true;
             animator.SetBool("isAttack", true);
         }
+    }
+    
+    public override void TakeDamage(float damage)
+    {
+        // 데미지를 준 플레이어 추적
+        if (EnemySpawner.Instance.Player != null && !EnemySpawner.Instance.Player.isDead)
+        {
+            _lastAttacker = EnemySpawner.Instance.Player;
+        }
+        
+        base.TakeDamage(damage);
     }
 
     /// <summary>
@@ -137,6 +149,12 @@ public class EnemyController : DamageableController
 
         UIManager.Instance.RefreshUpgradeUI();
         UIManager.Instance.RefreshGoldUI();
+        
+        // GameManager에 좀비 킬 추가
+        if (GameManager.Instance != null && _lastAttacker != null)
+        {
+            GameManager.Instance.AddZombieKill(_lastAttacker);
+        }
         
         isDead = true;
         Collider[] colliders = GetComponentsInChildren<Collider>();

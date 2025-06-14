@@ -17,6 +17,7 @@ public class Projectile : MonoBehaviour
 
     // 발사체 소유자 (외부에서 할당)
     public UserType userType;
+    public PlayerController owner; // 플레이어가 발사한 경우 소유자 추적
     
     public int Damage { get { return _damage; } set { _damage = value; } }
 
@@ -49,8 +50,8 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        // 플레이어 소유 발사체는 플레이어와 충돌 무시
-        if (userType == UserType.Player && other.CompareTag("Player"))
+        // 플레이어 소유 발사체는 자기 자신과 충돌 무시
+        if (userType == UserType.Player && owner != null && other.gameObject == owner.gameObject)
         {
             return;
         }
@@ -67,17 +68,35 @@ public class Projectile : MonoBehaviour
             Vector3 hitPos = other.ClosestPoint(transform.position);
             Instantiate(_hitEffectPrefab, hitPos, Quaternion.identity);
         }
+        
         // 충돌 대상이 DamageableController를 가지고 있다면, 소유자에 따라 피해 적용
         DamageableController target = other.GetComponent<DamageableController>();
         if (target != null)
         {
+            // 플레이어가 적을 공격
             if (userType == UserType.Player && other.CompareTag("Enemy"))
             {
                 target.TakeDamage(_damage);
             }
+            // 적이 플레이어를 공격
             else if (userType == UserType.Enemy && other.CompareTag("Player"))
             {
+                PlayerController playerTarget = other.GetComponent<PlayerController>();
+                if (playerTarget != null)
+                {
+                    playerTarget.SetLastAttacker(null); // 적이 공격한 경우
+                }
                 target.TakeDamage(_damage);
+            }
+            // 플레이어가 다른 플레이어를 공격 (PvP)
+            else if (userType == UserType.Player && other.CompareTag("Player") && owner != null)
+            {
+                PlayerController playerTarget = other.GetComponent<PlayerController>();
+                if (playerTarget != null && playerTarget != owner)
+                {
+                    playerTarget.SetLastAttacker(owner); // 공격자 설정
+                    target.TakeDamage(_damage);
+                }
             }
         }
 
