@@ -44,6 +44,10 @@ public class PlayerController : DamageableController
     [SerializeField] private LayerMask _enemyLayerMask = -1;    // 적 레이어 마스크
     [SerializeField] private bool _enableAutoAim = true;        // 자동 조준 활성화 여부
     
+    [Header("Auto Attack Settings")]
+    [SerializeField] private bool _enableAutoAttack = true;     // 자동 공격 활성화 여부
+    [SerializeField] private float _autoAttackRange = 15f;      // 자동 공격 범위
+    
     [Header("Dash Settings")]
     [SerializeField] private float dashDistance = 3f;  // 뒤로 이동할 거리
     [SerializeField] private float dashDuration = 0.2f;// 이동에 걸리는 시간
@@ -91,6 +95,7 @@ public class PlayerController : DamageableController
     private float _lastAttackTime = 0f;      // 마지막 공격 시간
     private Transform _currentAutoAimTarget = null; // 현재 자동 조준 타겟
     private Coroutine _autoAimCoroutine = null;    // 자동 조준 코루틴
+    private Coroutine _autoAttackCoroutine = null; // 자동 공격 코루틴
     private bool _isMouseRotating = false;  // 마우스 오른쪽 버튼으로 회전 중인지 여부
     #endregion
     
@@ -152,7 +157,15 @@ public class PlayerController : DamageableController
 
     private void OnEnable()
     {
-        // 자동 공격 제거됨
+        // 자동 공격 코루틴 시작
+        if (_enableAutoAttack)
+        {
+            if (_autoAttackCoroutine != null)
+            {
+                StopCoroutine(_autoAttackCoroutine);
+            }
+            _autoAttackCoroutine = StartCoroutine(AutoAttackRoutine());
+        }
     }
 
     private void OnDisable()
@@ -162,6 +175,13 @@ public class PlayerController : DamageableController
         {
             StopCoroutine(_autoAimCoroutine);
             _autoAimCoroutine = null;
+        }
+        
+        // 자동 공격 코루틴 중지
+        if (_autoAttackCoroutine != null)
+        {
+            StopCoroutine(_autoAttackCoroutine);
+            _autoAttackCoroutine = null;
         }
     }
 
@@ -438,6 +458,63 @@ public class PlayerController : DamageableController
         
         _playerAnimator.SetFloat("X", input.x);
         _playerAnimator.SetFloat("Y", input.y);
+    }
+
+    /// <summary>
+    /// 자동 공격 코루틴
+    /// </summary>
+    private IEnumerator AutoAttackRoutine()
+    {
+        while (true)
+        {
+            if (!isDead && _enableAutoAttack)
+            {
+                // 자동 공격 범위 내에 적이 있는지 확인
+                Transform nearestEnemy = GetNearestEnemyInRange(_autoAttackRange);
+                
+                if (nearestEnemy != null)
+                {
+                    // 공격 쿨타임 체크
+                    if (Time.time - _lastAttackTime >= _attackInterval)
+                    {
+                        Attack();
+                        _lastAttackTime = Time.time;
+                    }
+                }
+            }
+            
+            yield return new WaitForSeconds(0.1f); // 0.1초마다 체크
+        }
+    }
+
+    /// <summary>
+    /// 자동 공격 범위 내에서 가장 가까운 적을 찾습니다.
+    /// </summary>
+    private Transform GetNearestEnemyInRange(float range)
+    {
+        Transform nearestEnemy = null;
+        float nearestDistance = float.MaxValue;
+        
+        Collider[] enemies = Physics.OverlapSphere(transform.position, range, _enemyLayerMask);
+        
+        foreach (Collider enemy in enemies)
+        {
+            if (!enemy.CompareTag("Enemy")) continue;
+            
+            // 죽은 적은 제외
+            DamageableController damageable = enemy.GetComponent<DamageableController>();
+            if (damageable != null && damageable.isDead) continue;
+            
+            float distance = Vector3.Distance(transform.position, enemy.transform.position);
+            
+            if (distance < nearestDistance)
+            {
+                nearestDistance = distance;
+                nearestEnemy = enemy.transform;
+            }
+        }
+        
+        return nearestEnemy;
     }
 
     /// <summary>
@@ -882,6 +959,13 @@ public class PlayerController : DamageableController
         {
             StopCoroutine(_autoAimCoroutine);
             _autoAimCoroutine = null;
+        }
+        
+        // 자동 공격 코루틴 중지
+        if (_autoAttackCoroutine != null)
+        {
+            StopCoroutine(_autoAttackCoroutine);
+            _autoAttackCoroutine = null;
         }
         
         // GameManager에 플레이어 사망 알림 (PvP 킬 처리)
