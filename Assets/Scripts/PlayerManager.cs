@@ -45,6 +45,9 @@ public class PlayerManager : MonoBehaviour
         {
             characters[i].gameObject.SetActive(i == currentIndex);
         }
+        
+        // 현재 캐릭터 설정
+        curPlayer = characters[currentIndex];
     }
 
     // UI 버튼 OnClick() 이벤트에 연결하여 사용하세요.
@@ -81,9 +84,25 @@ public class PlayerManager : MonoBehaviour
         curPlayer = characters[characterIndex];
     }
     
+    // 스킬 버튼 메서드들
     public void OnBackDashButton()
     {
         curPlayer.OnBackDashButton();
+    }
+    
+    public void OnSkill1Button()
+    {
+        curPlayer.OnSkill1Button();
+    }
+    
+    public void OnSkill2Button()
+    {
+        curPlayer.OnSkill2Button();
+    }
+    
+    public void OnUltimateButton()
+    {
+        curPlayer.OnUltimateButton();
     }
 
     public void Die()

@@ -38,6 +38,35 @@ public class PlayerController : DamageableController
     [SerializeField] private float dashDistance = 3f;  // 뒤로 이동할 거리
     [SerializeField] private float dashDuration = 0.2f;// 이동에 걸리는 시간
     private bool isDashing = false;
+    
+    [Header("Skill Settings")]
+    // 스킬 1: 이동하면서 사용하는 스킬 (쿨타임 4초)
+    [SerializeField] private float skill1Cooldown = 4f;
+    [SerializeField] private float skill1Duration = 1f;
+    [SerializeField] private float skill1MoveSpeedMultiplier = 1.5f;
+    [SerializeField] private GameObject skill1EffectPrefab;
+    private float skill1LastUsedTime = -10f;
+    private bool isUsingSkill1 = false;
+    
+    // 스킬 2: 이동하면서 일반 공격 (쿨타임 2초)
+    [SerializeField] private float skill2Cooldown = 2f;
+    [SerializeField] private float skill2Duration = 0.5f;
+    [SerializeField] private int skill2BulletCount = 5;
+    [SerializeField] private float skill2BulletInterval = 0.1f;
+    private float skill2LastUsedTime = -10f;
+    private bool isUsingSkill2 = false;
+    
+    // 스킬 3: 궁극기 (쿨타임 6초)
+    [SerializeField] private float ultimateCooldown = 6f;
+    [SerializeField] private float ultimateDuration = 2f;
+    [SerializeField] private GameObject ultimateEffectPrefab;
+    [SerializeField] private float ultimateDamageRadius = 10f;
+    [SerializeField] private int ultimateDamage = 50;
+    private float ultimateLastUsedTime = -10f;
+    private bool isUsingUltimate = false;
+    
+    // 스킬 캔슬 관련
+    private Coroutine currentSkillCoroutine = null;
     #endregion
 
     #region Private Fields
@@ -168,6 +197,11 @@ public class PlayerController : DamageableController
             camRight.Normalize();
 
             Vector3 moveDir = camRight * input.x + camForward * input.y;
+            
+            // 스킬1 사용 중이면 이동속도 증가
+            float currentSpeed = isUsingSkill1 ? _moveSpeed * skill1MoveSpeedMultiplier : _moveSpeed;
+            _agent.speed = currentSpeed;
+            
             Vector3 destination = transform.position + moveDir;
             _agent.SetDestination(destination);
         }
@@ -329,12 +363,14 @@ public class PlayerController : DamageableController
     }
     #endregion
     
+    #region Skill System
     // 백 대쉬 버튼이 눌렸을 때 호출
     public void OnBackDashButton()
     {
         // 이미 대쉬 중이거나 죽은 상태면 실행 안 함
         if (isDashing || isDead) return;
 
+        CancelCurrentSkill();
         StartCoroutine(BackDashRoutine());
     }
 
@@ -359,6 +395,213 @@ public class PlayerController : DamageableController
 
         isDashing = false;
     }
+    
+    // 스킬 1: 이동하면서 사용하는 스킬 (이동속도 증가 + 이펙트)
+    public void OnSkill1Button()
+    {
+        if (isDead || Time.time - skill1LastUsedTime < skill1Cooldown) return;
+        
+        CancelCurrentSkill();
+        currentSkillCoroutine = StartCoroutine(Skill1Routine());
+    }
+    
+    private IEnumerator Skill1Routine()
+    {
+        skill1LastUsedTime = Time.time;
+        isUsingSkill1 = true;
+        
+        // 스킬 애니메이션 재생
+        _playerAnimator.SetTrigger("Skill1");
+        
+        // 이펙트 생성
+        GameObject effect = null;
+        if (skill1EffectPrefab != null)
+        {
+            effect = Instantiate(skill1EffectPrefab, transform.position, transform.rotation);
+            effect.transform.SetParent(transform);
+        }
+        
+        // 스킬 지속시간 동안 대기
+        yield return new WaitForSeconds(skill1Duration);
+        
+        // 이펙트 제거
+        if (effect != null)
+        {
+            Destroy(effect);
+        }
+        
+        isUsingSkill1 = false;
+        currentSkillCoroutine = null;
+    }
+    
+    // 스킬 2: 이동하면서 연속 사격
+    public void OnSkill2Button()
+    {
+        if (isDead || Time.time - skill2LastUsedTime < skill2Cooldown) return;
+        
+        CancelCurrentSkill();
+        currentSkillCoroutine = StartCoroutine(Skill2Routine());
+    }
+    
+    private IEnumerator Skill2Routine()
+    {
+        skill2LastUsedTime = Time.time;
+        isUsingSkill2 = true;
+        
+        // 스킬 애니메이션 재생
+        _playerAnimator.SetTrigger("Skill2");
+        
+        // 연속 사격
+        for (int i = 0; i < skill2BulletCount; i++)
+        {
+            if (isDead) break;
+            
+            // 기존 Attack 메서드의 로직을 활용
+            if (_projectilePrefab != null && _gunSpawnPoint != null)
+            {
+                // 머즐 플래시
+                if (_muzzleFlashPrefab != null)
+                {
+                    Instantiate(_muzzleFlashPrefab, _gunSpawnPoint.position, _gunSpawnPoint.rotation);
+                }
+                
+                // 사운드
+                _attackAudioSource.clip = _attackSoundClip;
+                _attackAudioSource.Play();
+                
+                // 발사체 생성
+                Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+                RaycastHit hit;
+                Vector3 targetPoint = Physics.Raycast(ray, out hit) ? hit.point : ray.GetPoint(1000f);
+                
+                GameObject bullet = Instantiate(_projectilePrefab, _gunSpawnPoint.position, Quaternion.identity);
+                bullet.transform.LookAt(targetPoint);
+                
+                Projectile proj = bullet.GetComponent<Projectile>();
+                int currentDamage = proj.Damage + (int)UpgradeManager.GetDamageBonus();
+                if (proj != null)
+                {
+                    proj.userType = UserType.Player;
+                    proj.Damage = currentDamage;
+                }
+                
+                CameraShake.ShakeAll();
+            }
+            
+            yield return new WaitForSeconds(skill2BulletInterval);
+        }
+        
+        isUsingSkill2 = false;
+        currentSkillCoroutine = null;
+    }
+    
+    // 스킬 3: 궁극기 (범위 공격)
+    public void OnUltimateButton()
+    {
+        if (isDead || Time.time - ultimateLastUsedTime < ultimateCooldown) return;
+        
+        CancelCurrentSkill();
+        currentSkillCoroutine = StartCoroutine(UltimateRoutine());
+    }
+    
+    private IEnumerator UltimateRoutine()
+    {
+        ultimateLastUsedTime = Time.time;
+        isUsingUltimate = true;
+        
+        // 궁극기 애니메이션 재생
+        _playerAnimator.SetTrigger("Ultimate");
+        
+        // 궁극기 이펙트 생성
+        GameObject effect = null;
+        if (ultimateEffectPrefab != null)
+        {
+            effect = Instantiate(ultimateEffectPrefab, transform.position, Quaternion.identity);
+        }
+        
+        // 0.5초 후 범위 데미지 적용
+        yield return new WaitForSeconds(0.5f);
+        
+        // 범위 내 모든 적에게 데미지
+        Collider[] enemies = Physics.OverlapSphere(transform.position, ultimateDamageRadius);
+        foreach (Collider enemy in enemies)
+        {
+            if (enemy.CompareTag("Enemy"))
+            {
+                DamageableController target = enemy.GetComponent<DamageableController>();
+                if (target != null)
+                {
+                    target.TakeDamage(ultimateDamage + (int)UpgradeManager.GetDamageBonus());
+                }
+            }
+        }
+        
+        // 카메라 쉐이크 (강하게)
+        CameraShake.ShakeAll();
+        
+        // 나머지 지속시간 대기
+        yield return new WaitForSeconds(ultimateDuration - 0.5f);
+        
+        // 이펙트 제거
+        if (effect != null)
+        {
+            Destroy(effect);
+        }
+        
+        isUsingUltimate = false;
+        currentSkillCoroutine = null;
+    }
+    
+    // 현재 진행 중인 스킬 캔슬
+    private void CancelCurrentSkill()
+    {
+        if (currentSkillCoroutine != null)
+        {
+            StopCoroutine(currentSkillCoroutine);
+            currentSkillCoroutine = null;
+        }
+        
+        isUsingSkill1 = false;
+        isUsingSkill2 = false;
+        isUsingUltimate = false;
+    }
+    #endregion
+
+    #region Cooldown Getters
+    // UI에서 쿨타임 정보를 가져올 수 있도록 하는 메서드들
+    public float GetSkill1CooldownRemaining()
+    {
+        float elapsed = Time.time - skill1LastUsedTime;
+        return Mathf.Max(0, skill1Cooldown - elapsed);
+    }
+    
+    public float GetSkill1Cooldown()
+    {
+        return skill1Cooldown;
+    }
+    
+    public float GetSkill2CooldownRemaining()
+    {
+        float elapsed = Time.time - skill2LastUsedTime;
+        return Mathf.Max(0, skill2Cooldown - elapsed);
+    }
+    
+    public float GetSkill2Cooldown()
+    {
+        return skill2Cooldown;
+    }
+    
+    public float GetUltimateCooldownRemaining()
+    {
+        float elapsed = Time.time - ultimateLastUsedTime;
+        return Mathf.Max(0, ultimateCooldown - elapsed);
+    }
+    
+    public float GetUltimateCooldown()
+    {
+        return ultimateCooldown;
+    }
+    #endregion
 
     #region Death Handling
     /// <summary>
