@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Thinksquirrel.CShake;
 using Unity.VisualScripting;
+using TMPro;
 
 // 캐릭터 타입 열거형 추가
 public enum CharacterType
@@ -104,8 +105,8 @@ public class PlayerController : DamageableController
     [SerializeField] private float ultimateCooldown = 6f;
     [SerializeField] private float ultimateDuration = 2f;
     [SerializeField] private GameObject ultimateEffectPrefab;
-    [SerializeField] private float ultimateDamageRadius = 10f;
-    [SerializeField] private int ultimateDamage = 50;
+    [SerializeField] private float ultimateDamageRadius = 15f;
+    [SerializeField] private int ultimateDamage = 70;
     private float ultimateLastUsedTime = -10f;
     private bool isUsingUltimate = false;
     
@@ -368,6 +369,8 @@ public class PlayerController : DamageableController
         // R - 궁극기
         if (Input.GetKeyDown(KeyCode.R))
         {
+            float cooldownRemaining = GetUltimateCooldownRemaining();
+            Debug.Log($"R키 눌림 - isDead: {isDead}, 쿨타임 남음: {cooldownRemaining}초");
             OnUltimateButton();
         }
         
@@ -1185,22 +1188,60 @@ public class PlayerController : DamageableController
         currentSkillCoroutine = null;
     }
     
-    // 스킬 3: 궁극기 (범위 공격)
+    // 스킬 3: 궁극기 (쿨타임 6초)
     public void OnUltimateButton()
     {
-        if (isDead || Time.time - ultimateLastUsedTime < ultimateCooldown) return;
+        Debug.Log($"OnUltimateButton 호출됨 - isDead: {isDead}, Time.time: {Time.time}, ultimateLastUsedTime: {ultimateLastUsedTime}, 쿨타임 체크: {Time.time - ultimateLastUsedTime < ultimateCooldown}");
         
+        if (isDead)
+        {
+            Debug.Log("궁극기 실행 실패: 플레이어가 죽어있음");
+            return;
+        }
+        
+        if (Time.time - ultimateLastUsedTime < ultimateCooldown)
+        {
+            float remainingCooldown = ultimateCooldown - (Time.time - ultimateLastUsedTime);
+            Debug.Log($"궁극기 실행 실패: 쿨타임 남음 {remainingCooldown:F2}초");
+            return;
+        }
+        
+        Debug.Log("궁극기 실행 조건 충족! UltimateRoutine 시작");
         CancelCurrentSkill();
         currentSkillCoroutine = StartCoroutine(UltimateRoutine());
     }
     
     private IEnumerator UltimateRoutine()
     {
+        Debug.Log("UltimateRoutine 시작됨!");
         ultimateLastUsedTime = Time.time;
         isUsingUltimate = true;
         
-        // 궁극기 애니메이션 재생
-        _playerAnimator.SetTrigger("Ultimate");
+        // 궁극기 애니메이션 재생 - Ultimate 트리거가 없을 수도 있으므로 예외 처리
+        if (_playerAnimator != null)
+        {
+            // 애니메이터에 Ultimate 트리거가 있는지 확인
+            bool hasUltimateTrigger = false;
+            foreach (var param in _playerAnimator.parameters)
+            {
+                if (param.name == "Ultimate" && param.type == AnimatorControllerParameterType.Trigger)
+                {
+                    hasUltimateTrigger = true;
+                    break;
+                }
+            }
+            
+            if (hasUltimateTrigger)
+            {
+                _playerAnimator.SetTrigger("Ultimate");
+            }
+            else
+            {
+                Debug.LogWarning("애니메이터에 'Ultimate' 트리거가 없습니다. 대신 일반 공격 애니메이션을 사용합니다.");
+                // 대체 애니메이션 사용 (예: 일반 공격)
+                _playerAnimator.SetTrigger("Fire");
+            }
+        }
         
         // 궁극기 이펙트 생성
         GameObject effect = null;
@@ -1211,12 +1252,19 @@ public class PlayerController : DamageableController
             effect.transform.SetParent(transform);
             effect.transform.localPosition = Vector3.zero;
         }
+        else
+        {
+            Debug.LogWarning("ultimateEffectPrefab이 할당되지 않았습니다!");
+        }
         
         // 0.5초 후 범위 데미지 적용 (차징 시간)
         yield return new WaitForSeconds(0.5f);
         
+        Debug.Log($"궁극기 범위 데미지 시작! 위치: {transform.position}, 반경: {ultimateDamageRadius}");
+        
         // 범위 내 모든 대상에게 데미지
         Collider[] hits = Physics.OverlapSphere(transform.position, ultimateDamageRadius);
+        Debug.Log($"범위 내 콜라이더 수: {hits.Length}");
         
         // 실제로 데미지를 준 대상 수 카운트
         int hitCount = 0;
@@ -1243,6 +1291,7 @@ public class PlayerController : DamageableController
                     int finalDamage = (int)((ultimateDamage + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
                     target.TakeDamage(finalDamage);
                     hitCount++;
+                    Debug.Log($"궁극기로 {hit.name}에게 {finalDamage} 데미지!");
                 }
             }
             // 다른 플레이어에게 데미지 (PvP)
@@ -1258,9 +1307,12 @@ public class PlayerController : DamageableController
                     int finalDamage = (int)((ultimateDamage + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
                     otherPlayer.TakeDamage(finalDamage);
                     hitCount++;
+                    Debug.Log($"궁극기로 플레이어 {otherPlayer.name}에게 {finalDamage} 데미지!");
                 }
             }
         }
+        
+        Debug.Log($"궁극기 적중 수: {hitCount}");
         
         // 카메라 쉐이크 (강하게) - 실제로 적중한 경우에만
         if (hitCount > 0)
@@ -1271,8 +1323,12 @@ public class PlayerController : DamageableController
             if (hitCount >= 3)
             {
                 // 멀티킬 효과음 재생 등
-                Debug.Log($"궁극기로 {hitCount}명 동시 공격!");
+                Debug.Log($"궁극기 멀티킬! {hitCount}명 동시 공격!");
             }
+        }
+        else
+        {
+            Debug.LogWarning("궁극기가 아무도 맞추지 못했습니다!");
         }
         
         // 나머지 지속시간 대기
@@ -1288,6 +1344,7 @@ public class PlayerController : DamageableController
         
         isUsingUltimate = false;
         currentSkillCoroutine = null;
+        Debug.Log("UltimateRoutine 종료!");
     }
     
     // 현재 진행 중인 스킬 캔슬

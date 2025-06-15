@@ -62,10 +62,29 @@ public class Projectile : MonoBehaviour
             return;
         }
 
-        // 타격 이펙트 재생 (충돌 지점은 Collider의 경계에서 가장 가까운 점 사용)
+        // 타격 이펙트 재생 - ClosestPoint 대신 충돌 위치 사용
         if (_hitEffectPrefab != null)
         {
-            Vector3 hitPos = other.ClosestPoint(transform.position);
+            Vector3 hitPos = transform.position; // 발사체의 현재 위치를 사용
+            
+            // 더 정확한 충돌 지점이 필요한 경우에만 ClosestPoint 사용
+            // 단, convex 콜라이더인 경우에만
+            Collider collider = other.GetComponent<Collider>();
+            if (collider != null)
+            {
+                // BoxCollider, SphereCollider, CapsuleCollider는 ClosestPoint 사용 가능
+                if (collider is BoxCollider || collider is SphereCollider || collider is CapsuleCollider)
+                {
+                    hitPos = collider.ClosestPoint(transform.position);
+                }
+                else if (collider is MeshCollider meshCollider && meshCollider.convex)
+                {
+                    // Convex MeshCollider도 사용 가능
+                    hitPos = collider.ClosestPoint(transform.position);
+                }
+                // 그 외의 경우는 발사체 위치 사용
+            }
+            
             Instantiate(_hitEffectPrefab, hitPos, Quaternion.identity);
         }
         
