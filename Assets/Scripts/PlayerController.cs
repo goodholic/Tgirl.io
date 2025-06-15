@@ -83,10 +83,11 @@ public class PlayerController : DamageableController
     private bool isDashing = false;
     
     [Header("Skill Settings")]
-    // 스킬 1: 이동하면서 사용하는 스킬 (쿨타임 4초)
+    // 스킬 1: 앞으로 대쉬하면서 연속 공격 (쿨타임 4초)
     [SerializeField] private float skill1Cooldown = 4f;
     [SerializeField] private float skill1Duration = 1f;
-    [SerializeField] private float skill1MoveSpeedMultiplier = 1.5f;
+    [SerializeField] private float skill1DashSpeed = 15f;       // 대쉬 속도
+    [SerializeField] private float skill1AttackInterval = 0.1f; // 연속 공격 간격
     [SerializeField] private GameObject skill1EffectPrefab;
     private float skill1LastUsedTime = -10f;
     private bool isUsingSkill1 = false;
@@ -402,6 +403,9 @@ public class PlayerController : DamageableController
     /// </summary>
     private void HandleMovement()
     {
+        // 스킬 1 사용 중에는 이동 입력 무시
+        if (isUsingSkill1) return;
+        
         Vector2 input = Vector2.zero;
         
         // 키보드 입력 처리 (WASD)
@@ -434,10 +438,6 @@ public class PlayerController : DamageableController
             camRight.Normalize();
 
             Vector3 moveDir = camRight * input.x + camForward * input.y;
-            
-            // 스킬1 사용 중이면 이동속도 증가
-            float currentSpeed = isUsingSkill1 ? _moveSpeed * skill1MoveSpeedMultiplier : _moveSpeed;
-            _agent.speed = currentSpeed;
             
             Vector3 destination = transform.position + moveDir;
             _agent.SetDestination(destination);
@@ -575,7 +575,7 @@ public class PlayerController : DamageableController
     {
         while (true)
         {
-            if (!isDead && _enableAutoAttack)
+            if (!isDead && _enableAutoAttack && !isUsingSkill1) // 스킬 1 사용 중에는 자동 공격 중지
             {
                 // 자동 조준 대상 찾기
                 Transform autoAimTarget = GetAutoAimTarget();
@@ -1041,7 +1041,7 @@ public class PlayerController : DamageableController
         isDashing = false;
     }
     
-    // 스킬 1: 이동하면서 사용하는 스킬 (이동속도 증가 + 이펙트)
+    // 스킬 1: 앞으로 대쉬하면서 연속 공격
     public void OnSkill1Button()
     {
         if (isDead || Time.time - skill1LastUsedTime < skill1Cooldown) return;
@@ -1066,13 +1066,87 @@ public class PlayerController : DamageableController
             effect.transform.SetParent(transform);
         }
         
-        // 스킬 지속시간 동안 대기
-        yield return new WaitForSeconds(skill1Duration);
+        // 자동 공격 코루틴 일시 중지
+        if (_autoAttackCoroutine != null)
+        {
+            StopCoroutine(_autoAttackCoroutine);
+        }
+        
+        float elapsedTime = 0f;
+        float lastAttackTime = 0f;
+        
+        // 대쉬 방향 결정
+        Vector3 dashDirection = transform.forward;
+        
+        while (elapsedTime < skill1Duration)
+        {
+            // 이동 입력 체크
+            Vector2 input = Vector2.zero;
+            
+            // 키보드 입력 처리 (WASD)
+            if (Input.GetKey(KeyCode.W)) input.y += 1f;
+            if (Input.GetKey(KeyCode.S)) input.y -= 1f;
+            if (Input.GetKey(KeyCode.A)) input.x -= 1f;
+            if (Input.GetKey(KeyCode.D)) input.x += 1f;
+            
+            // 조이스틱 입력이 있으면 조이스틱 우선
+            if (_joystick.InputDirection.sqrMagnitude > 0.01f)
+            {
+                input = _joystick.InputDirection;
+            }
+            
+            // 입력이 있으면 대쉬 방향 변경
+            if (input.sqrMagnitude > 0.01f)
+            {
+                // 카메라 기준 방향 계산
+                Vector3 camForward = Camera.main.transform.forward;
+                camForward.y = 0f;
+                camForward.Normalize();
+
+                Vector3 camRight = Camera.main.transform.right;
+                camRight.y = 0f;
+                camRight.Normalize();
+
+                dashDirection = (camRight * input.x + camForward * input.y).normalized;
+                
+                // 캐릭터 회전
+                if (dashDirection != Vector3.zero)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(dashDirection);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
+                }
+            }
+            
+            // 대쉬 이동
+            Vector3 destination = transform.position + dashDirection * skill1DashSpeed * Time.deltaTime;
+            
+            // NavMesh를 사용한 이동
+            if (_agent != null)
+            {
+                _agent.Move(dashDirection * skill1DashSpeed * Time.deltaTime);
+            }
+            
+            // 연속 공격
+            if (Time.time - lastAttackTime >= skill1AttackInterval)
+            {
+                Attack();
+                lastAttackTime = Time.time;
+            }
+            
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
         
         // 이펙트 제거
         if (effect != null)
         {
             Destroy(effect);
+        }
+        
+        // 자동 공격 코루틴 재시작
+        if (_enableAutoAttack && !_isAI)
+        {
+            _autoAttackCoroutine = StartCoroutine(AutoAttackRoutine());
         }
         
         isUsingSkill1 = false;
@@ -1133,27 +1207,73 @@ public class PlayerController : DamageableController
         if (ultimateEffectPrefab != null)
         {
             effect = Instantiate(ultimateEffectPrefab, transform.position, Quaternion.identity);
+            // 이펙트가 플레이어를 따라다니도록 설정
+            effect.transform.SetParent(transform);
+            effect.transform.localPosition = Vector3.zero;
         }
         
-        // 0.5초 후 범위 데미지 적용
+        // 0.5초 후 범위 데미지 적용 (차징 시간)
         yield return new WaitForSeconds(0.5f);
         
-        // 범위 내 모든 적에게 데미지
-        Collider[] enemies = Physics.OverlapSphere(transform.position, ultimateDamageRadius);
-        foreach (Collider enemy in enemies)
+        // 범위 내 모든 대상에게 데미지
+        Collider[] hits = Physics.OverlapSphere(transform.position, ultimateDamageRadius);
+        
+        // 실제로 데미지를 준 대상 수 카운트
+        int hitCount = 0;
+        
+        foreach (Collider hit in hits)
         {
-            if (enemy.CompareTag("Enemy"))
+            // 자기 자신은 제외
+            if (hit.gameObject == gameObject) continue;
+            
+            // 적(몬스터)에게 데미지
+            if (hit.CompareTag("Enemy"))
             {
-                DamageableController target = enemy.GetComponent<DamageableController>();
-                if (target != null)
+                DamageableController target = hit.GetComponent<DamageableController>();
+                if (target != null && !target.isDead)
                 {
-                    target.TakeDamage(ultimateDamage + (int)UpgradeManager.GetDamageBonus());
+                    // 적에게 공격자 정보 전달
+                    EnemyController enemyController = hit.GetComponent<EnemyController>();
+                    if (enemyController != null)
+                    {
+                        enemyController.SetAttacker(this);
+                    }
+                    
+                    // 캐릭터 타입별 데미지 배율 적용
+                    int finalDamage = (int)((ultimateDamage + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
+                    target.TakeDamage(finalDamage);
+                    hitCount++;
+                }
+            }
+            // 다른 플레이어에게 데미지 (PvP)
+            else if (hit.CompareTag("Player"))
+            {
+                PlayerController otherPlayer = hit.GetComponent<PlayerController>();
+                // 자기 자신이 아닌 다른 플레이어만 공격
+                if (otherPlayer != null && otherPlayer != this && !otherPlayer.isDead)
+                {
+                    otherPlayer.SetLastAttacker(this); // 공격자 설정
+                    
+                    // 캐릭터 타입별 데미지 배율 적용
+                    int finalDamage = (int)((ultimateDamage + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
+                    otherPlayer.TakeDamage(finalDamage);
+                    hitCount++;
                 }
             }
         }
         
-        // 카메라 쉐이크 (강하게)
-        CameraShake.ShakeAll();
+        // 카메라 쉐이크 (강하게) - 실제로 적중한 경우에만
+        if (hitCount > 0)
+        {
+            CameraShake.ShakeAll();
+            
+            // 다수 적중 시 추가 이펙트나 사운드 재생 가능
+            if (hitCount >= 3)
+            {
+                // 멀티킬 효과음 재생 등
+                Debug.Log($"궁극기로 {hitCount}명 동시 공격!");
+            }
+        }
         
         // 나머지 지속시간 대기
         yield return new WaitForSeconds(ultimateDuration - 0.5f);
@@ -1161,7 +1281,9 @@ public class PlayerController : DamageableController
         // 이펙트 제거
         if (effect != null)
         {
-            Destroy(effect);
+            // 부모 해제 후 삭제 (삭제 애니메이션을 위해)
+            effect.transform.SetParent(null);
+            Destroy(effect, 1f); // 1초 후 삭제 (페이드 아웃 시간)
         }
         
         isUsingUltimate = false;
@@ -1180,6 +1302,12 @@ public class PlayerController : DamageableController
         isUsingSkill1 = false;
         isUsingSkill2 = false;
         isUsingUltimate = false;
+        
+        // 자동 공격 재시작
+        if (_enableAutoAttack && !_isAI && _autoAttackCoroutine == null)
+        {
+            _autoAttackCoroutine = StartCoroutine(AutoAttackRoutine());
+        }
     }
     #endregion
 
