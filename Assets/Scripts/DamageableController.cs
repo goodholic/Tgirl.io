@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Diagnostics;
 
 /// <summary>
 /// 체력 관리, 피해 처리 및 피격 효과를 담당하는 기본 클래스
@@ -48,6 +49,9 @@ public abstract class DamageableController : MonoBehaviour
         if (isDead)
             return;
 
+        // 데미지 원인 추적을 위한 디버그 로그
+        LogDamageSource(damage);
+
         _health -= damage;
         if (_health < 0f)
             _health = 0f;
@@ -75,6 +79,43 @@ public abstract class DamageableController : MonoBehaviour
         if (_health <= 0f)
         {
             Die();
+        }
+    }
+
+    /// <summary>
+    /// 데미지 원인을 추적하는 메서드
+    /// </summary>
+    private void LogDamageSource(float damage)
+    {
+        // 호출 스택 추적
+        StackTrace stackTrace = new StackTrace(true);
+        string damageSource = "Unknown";
+        
+        // 스택 프레임을 순회하며 데미지 원인 찾기
+        for (int i = 2; i < stackTrace.FrameCount && i < 10; i++)
+        {
+            StackFrame frame = stackTrace.GetFrame(i);
+            var method = frame.GetMethod();
+            if (method != null)
+            {
+                string className = method.DeclaringType?.Name ?? "UnknownClass";
+                string methodName = method.Name;
+                
+                // Projectile, EnemyController 등 주요 클래스 확인
+                if (className == "Projectile" || className == "EnemyController" || 
+                    className == "PlayerController" || className == "AIPlayerController" ||
+                    className == "SafeZoneManager" || className == "DestructibleObject")
+                {
+                    damageSource = $"{className}.{methodName}";
+                    break;
+                }
+            }
+        }
+
+        // 플레이어인 경우에만 로그 출력
+        if (gameObject.CompareTag("Player"))
+        {
+            UnityEngine.Debug.Log($"[DAMAGE] {gameObject.name} 받은 데미지: {damage} | 원인: {damageSource} | 남은 체력: {_health}/{_maxHealth}");
         }
     }
 

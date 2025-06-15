@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 5c43b919dc8a35843b4a83a298c874a1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 198134
+  packageName: Figma Converter for Unity
+  packageVersion: 5.6.4
+  assetPath: Assets/D.A. Assets/Figma-Converter-for-Unity/Runtime/Assembly/Attributes/FcuInspectorProperty.cs
+  uploadId: 759946

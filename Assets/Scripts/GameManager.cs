@@ -97,6 +97,21 @@ public class GameManager : MonoBehaviour
     
     private void Start()
     {
+        // Ingame Debug Console 비활성화
+        var debugConsole = GameObject.Find("IngameDebugConsole");
+        if (debugConsole != null)
+        {
+            debugConsole.SetActive(false);
+            Debug.Log("Ingame Debug Console이 비활성화되었습니다.");
+        }
+        
+        // 화면에 로그 표시 끄기
+        Debug.unityLogger.logEnabled = true;  // 콘솔에는 표시
+        Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+        Application.SetStackTraceLogType(LogType.Warning, StackTraceLogType.None);
+        Application.SetStackTraceLogType(LogType.Error, StackTraceLogType.None);
+        
+        // 기존 코드
         StartGame();
     }
     
@@ -496,10 +511,6 @@ public class GameManager : MonoBehaviour
             UpgradeManager.Gold += finalGoldReward;
             UpgradeManager.SaveData();
             
-            // 경험치도 저장 (경험치 시스템이 있다면)
-            // PlayerPrefs.SetInt("PlayerExp", PlayerPrefs.GetInt("PlayerExp", 0) + finalExpReward);
-            // PlayerPrefs.Save();
-            
             // 광고 보상 패널 표시
             if (_adRewardPanel != null)
             {
@@ -525,10 +536,6 @@ public class GameManager : MonoBehaviour
         {
             UpgradeManager.Gold += _baseGoldReward;
             UpgradeManager.SaveData();
-            
-            // 경험치도 저장 (경험치 시스템이 있다면)
-            // PlayerPrefs.SetInt("PlayerExp", PlayerPrefs.GetInt("PlayerExp", 0) + _baseExpReward);
-            // PlayerPrefs.Save();
             
             UIManager.Instance.RefreshGoldUI();
         }

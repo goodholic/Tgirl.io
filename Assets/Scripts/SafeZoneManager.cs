@@ -376,6 +376,7 @@ public class SafeZoneManager : MonoBehaviour
                 if (!_playersInDanger.Contains(player))
                 {
                     _playersInDanger.Add(player);
+                    Debug.Log($"[SAFE ZONE] {player.name}이(가) 안전 구역을 벗어남! 지속 데미지 시작");
                     StartCoroutine(ApplyDamageToPlayer(player));
                 }
                 
@@ -390,6 +391,7 @@ public class SafeZoneManager : MonoBehaviour
                 // 안전 구역 안으로 들어오면 데미지 중지
                 if (_playersInDanger.Contains(player))
                 {
+                    Debug.Log($"[SAFE ZONE] {player.name}이(가) 안전 구역으로 복귀! 데미지 중지");
                     _playersInDanger.Remove(player);
                 }
                 
@@ -408,6 +410,7 @@ public class SafeZoneManager : MonoBehaviour
     {
         while (_playersInDanger.Contains(player) && player != null && !player.isDead)
         {
+            Debug.Log($"[SAFE ZONE DAMAGE] {player.name}에게 독 안개 데미지 {_currentDamagePerSecond} 적용 (Phase: {_currentPhase})");
             player.TakeDamage(_currentDamagePerSecond);
             
             // 데미지 틱 간격

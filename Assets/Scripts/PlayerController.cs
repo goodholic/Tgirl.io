@@ -73,6 +73,10 @@ public class PlayerController : DamageableController
     [SerializeField] private LayerMask _enemyLayerMask = -1;    // 적 레이어 마스크
     [SerializeField] private bool _enableAutoAim = true;        // 자동 조준 활성화 여부
     
+    [Header("Auto Attack Settings")]
+    [SerializeField] private bool _enableAutoAttack = true;     // 자동 공격 활성화 여부
+    [SerializeField] private float _autoAttackAngle = 15f;      // 자동 공격 각도 허용 범위
+    
     [Header("Dash Settings")]
     [SerializeField] private float dashDistance = 3f;  // 뒤로 이동할 거리
     [SerializeField] private float dashDuration = 0.2f;// 이동에 걸리는 시간
@@ -120,6 +124,7 @@ public class PlayerController : DamageableController
     private float _lastAttackTime = 0f;      // 마지막 공격 시간
     private Transform _currentAutoAimTarget = null; // 현재 자동 조준 타겟
     private Coroutine _autoAimCoroutine = null;    // 자동 조준 코루틴
+    private Coroutine _autoAttackCoroutine = null;  // 자동 공격 코루틴
     private bool _isMouseRotating = false;  // 마우스 오른쪽 버튼으로 회전 중인지 여부
     
     // 캐릭터 타입별 실제 적용 값들
@@ -204,7 +209,15 @@ public class PlayerController : DamageableController
 
     private void OnEnable()
     {
-        // 자동 공격 제거됨
+        // 자동 공격 코루틴 시작
+        if (_enableAutoAttack && !_isAI)
+        {
+            if (_autoAttackCoroutine != null)
+            {
+                StopCoroutine(_autoAttackCoroutine);
+            }
+            _autoAttackCoroutine = StartCoroutine(AutoAttackRoutine());
+        }
     }
 
     private void OnDisable()
@@ -214,6 +227,13 @@ public class PlayerController : DamageableController
         {
             StopCoroutine(_autoAimCoroutine);
             _autoAimCoroutine = null;
+        }
+        
+        // 자동 공격 코루틴 중지
+        if (_autoAttackCoroutine != null)
+        {
+            StopCoroutine(_autoAttackCoroutine);
+            _autoAttackCoroutine = null;
         }
     }
 
@@ -306,7 +326,8 @@ public class PlayerController : DamageableController
                 _actualAttackInterval = _swordAttackInterval;
                 _actualDamageMultiplier = _swordDamageMultiplier;
                 _actualAttackRange = _swordAttackRange;
-                _enableAutoAim = false; // 검은 자동 조준 비활성화
+                // 검도 자동 조준 활성화 (샷건과 동일하게)
+                _autoAimRadius = _swordAttackRange * 3f; // 검의 경우 조금 더 넓은 감지 범위
                 break;
         }
     }
@@ -545,6 +566,37 @@ public class PlayerController : DamageableController
         
         _playerAnimator.SetFloat("X", input.x);
         _playerAnimator.SetFloat("Y", input.y);
+    }
+
+    /// <summary>
+    /// 자동 공격 루틴
+    /// </summary>
+    private IEnumerator AutoAttackRoutine()
+    {
+        while (true)
+        {
+            if (!isDead && _enableAutoAttack)
+            {
+                // 자동 조준 대상 찾기
+                Transform autoAimTarget = GetAutoAimTarget();
+                
+                if (autoAimTarget != null)
+                {
+                    // 타겟과의 각도 계산
+                    Vector3 directionToTarget = (autoAimTarget.position - transform.position).normalized;
+                    float angleToTarget = Vector3.Angle(transform.forward, directionToTarget);
+                    
+                    // 설정된 각도 내에 타겟이 있고 공격 쿨타임이 끝났으면 자동 공격
+                    if (angleToTarget <= _autoAttackAngle && Time.time - _lastAttackTime >= _actualAttackInterval)
+                    {
+                        Attack();
+                        _lastAttackTime = Time.time;
+                    }
+                }
+            }
+            
+            yield return new WaitForSeconds(0.1f); // 0.1초마다 체크
+        }
     }
 
     /// <summary>
@@ -830,6 +882,33 @@ public class PlayerController : DamageableController
     /// </summary>
     private void SwordAttack()
     {
+        // 자동 조준 대상 찾기
+        Transform autoAimTarget = GetAutoAimTarget();
+        
+        // 새로운 타겟이 발견되면 자동 조준 시작
+        if (autoAimTarget != null && autoAimTarget != _currentAutoAimTarget)
+        {
+            _currentAutoAimTarget = autoAimTarget;
+            
+            // 기존 자동 조준 코루틴 중지
+            if (_autoAimCoroutine != null)
+            {
+                StopCoroutine(_autoAimCoroutine);
+            }
+            
+            // 새로운 자동 조준 코루틴 시작
+            _autoAimCoroutine = StartCoroutine(AutoAimRoutine());
+        }
+        else if (autoAimTarget == null)
+        {
+            _currentAutoAimTarget = null;
+            if (_autoAimCoroutine != null)
+            {
+                StopCoroutine(_autoAimCoroutine);
+                _autoAimCoroutine = null;
+            }
+        }
+
         if (_swordSlashEffectPrefab != null)
         {
             Instantiate(_swordSlashEffectPrefab, transform.position + transform.forward * 1.5f, transform.rotation);
@@ -1151,6 +1230,13 @@ public class PlayerController : DamageableController
         {
             StopCoroutine(_autoAimCoroutine);
             _autoAimCoroutine = null;
+        }
+        
+        // 자동 공격 코루틴 중지
+        if (_autoAttackCoroutine != null)
+        {
+            StopCoroutine(_autoAttackCoroutine);
+            _autoAttackCoroutine = null;
         }
         
         // GameManager에 플레이어 사망 알림 (PvP 킬 처리)

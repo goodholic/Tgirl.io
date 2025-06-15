@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 175db6af22d7e3a4a9abff4ad74dbf62
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 198134
+  packageName: Figma Converter for Unity
+  packageVersion: 5.6.4
+  assetPath: Assets/D.A. Assets/Figma-Converter-for-Unity/Editor/Scripts/Settings/TextMeshSection.cs
+  uploadId: 759946

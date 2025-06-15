@@ -104,7 +104,7 @@ public class EnemyController : DamageableController
     /// </summary>
     public void ApplyDamage()
     {
-        if (_currentTarget != null && !_currentTarget.isDead)
+        if (_currentTarget != null && !_currentTarget.isDead && _currentTarget.gameObject.activeInHierarchy)
         {
             _currentTarget.TakeDamage(_damage);
         }
