@@ -76,6 +76,12 @@ public class Projectile : MonoBehaviour
             // 플레이어가 적을 공격
             if (userType == UserType.Player && other.CompareTag("Enemy"))
             {
+                // Enemy에게 공격자 정보 전달
+                EnemyController enemyTarget = other.GetComponent<EnemyController>();
+                if (enemyTarget != null && owner != null)
+                {
+                    enemyTarget.SetAttacker(owner);
+                }
                 target.TakeDamage(_damage);
             }
             // 적이 플레이어를 공격

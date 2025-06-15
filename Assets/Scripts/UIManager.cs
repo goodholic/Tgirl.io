@@ -27,6 +27,10 @@ public class UIManager : MonoBehaviour
     //public Button attackSpeedUpButton;
     public Button goldGainUpButton;
     public Button maxHealthUpButton;
+    
+    [Header("Attack Mode UI")]
+    public GameObject attackModePanel;      // 공격 모드 표시 패널
+    public TextMeshProUGUI attackModeText;  // 공격 모드 텍스트
 
     private void Awake()
     {
@@ -50,6 +54,32 @@ public class UIManager : MonoBehaviour
         //attackSpeedUpButton.onClick.AddListener(OnClickAttackSpeedUp);
         goldGainUpButton.onClick.AddListener(OnClickGoldGainUp);
         maxHealthUpButton.onClick.AddListener(OnClickMaxHealthUp);
+        
+        // 공격 모드 UI 설정
+        SetupAttackModeUI();
+    }
+    
+    /// <summary>
+    /// 공격 모드 UI 설정
+    /// </summary>
+    private void SetupAttackModeUI()
+    {
+        if (attackModePanel != null)
+        {
+            attackModePanel.SetActive(true);
+        }
+        
+        if (attackModeText != null && PlayerManager.Instance != null && PlayerManager.Instance.curPlayer != null)
+        {
+            // PlayerController의 공격 모드 텍스트 참조 설정
+            PlayerController player = PlayerManager.Instance.curPlayer;
+            System.Reflection.FieldInfo field = player.GetType().GetField("_attackModeText", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (field != null)
+            {
+                field.SetValue(player, attackModeText);
+            }
+        }
     }
 
     public void ShowUpgradePopup()

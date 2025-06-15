@@ -131,6 +131,13 @@ public class PlayerController : DamageableController
     public Transform LookAtTarget { get { return _lookAtTarget; } set { _lookAtTarget = value; } }
     public CharacterType CharacterTypeProperty => _characterType;
     public float AttackInterval => _actualAttackInterval;
+    
+    // AI 여부 설정 프로퍼티 추가
+    public bool IsAI 
+    { 
+        get { return _isAI; } 
+        set { _isAI = value; } 
+    }
 
     #region Unity Methods
     protected override void Awake()
@@ -187,6 +194,12 @@ public class PlayerController : DamageableController
         {
             GameManager.Instance.RegisterPlayer(this, _playerName);
         }
+        
+        // EnemySpawner에 플레이어 등록 (AI 플레이어도 포함)
+        if (EnemySpawner.Instance != null)
+        {
+            EnemySpawner.Instance.RegisterPlayer(this);
+        }
     }
 
     private void OnEnable()
@@ -206,19 +219,33 @@ public class PlayerController : DamageableController
 
     private void Update()
     {
-        HandleKeyboardInput();
-        HandleManualAttack();
-        
+        // AI가 아닌 경우에만 입력 처리
+        if (!_isAI)
+        {
+            HandleKeyboardInput();
+            HandleManualAttack();
+            
 #if UNITY_EDITOR
-        HandleRotationByMouse();
+            HandleRotationByMouse();
 #else
-        HandleRotationByDrag();
+            HandleRotationByDrag();
 #endif
+        }
+        
         if (!isDead)
         {
-            HandleMovement();
+            // AI가 아닌 경우에만 이동 처리
+            if (!_isAI)
+            {
+                HandleMovement();
+            }
         }
-        UpdateAnimation();
+        
+        // AI가 아닌 경우에만 애니메이션 업데이트
+        if (!_isAI)
+        {
+            UpdateAnimation();
+        }
     }
 
     private void OnAnimatorIK(int layerIndex)
@@ -240,6 +267,15 @@ public class PlayerController : DamageableController
                 _playerAnimator.SetIKPosition(AvatarIKGoal.LeftHand, _leftHandTarget.position);
                 _playerAnimator.SetIKRotation(AvatarIKGoal.LeftHand, _leftHandTarget.rotation);
             }
+        }
+    }
+    
+    private void OnDestroy()
+    {
+        // EnemySpawner에서 플레이어 제거
+        if (EnemySpawner.Instance != null)
+        {
+            EnemySpawner.Instance.UnregisterPlayer(this);
         }
     }
     #endregion
@@ -809,6 +845,7 @@ public class PlayerController : DamageableController
         Collider[] enemies = Physics.OverlapSphere(transform.position + transform.forward * (_swordAttackRange * 0.5f), _swordAttackRange);
         foreach (Collider enemy in enemies)
         {
+            // 적(몬스터) 공격
             if (enemy.CompareTag("Enemy"))
             {
                 // 전방 각도 체크
@@ -820,8 +857,34 @@ public class PlayerController : DamageableController
                     DamageableController target = enemy.GetComponent<DamageableController>();
                     if (target != null && !target.isDead)
                     {
+                        // 적에게 공격자 정보 전달
+                        EnemyController enemyController = enemy.GetComponent<EnemyController>();
+                        if (enemyController != null)
+                        {
+                            enemyController.SetAttacker(this);
+                        }
+                        
                         int damage = (int)((10 + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
                         target.TakeDamage(damage);
+                    }
+                }
+            }
+            // 다른 플레이어 공격 (PvP)
+            else if (enemy.CompareTag("Player"))
+            {
+                PlayerController otherPlayer = enemy.GetComponent<PlayerController>();
+                // 자기 자신이 아닌 다른 플레이어만 공격
+                if (otherPlayer != null && otherPlayer != this && !otherPlayer.isDead)
+                {
+                    // 전방 각도 체크
+                    Vector3 directionToPlayer = (enemy.transform.position - transform.position).normalized;
+                    float angle = Vector3.Angle(transform.forward, directionToPlayer);
+                    
+                    if (angle < 90f) // 전방 180도 범위
+                    {
+                        otherPlayer.SetLastAttacker(this); // 공격자 설정
+                        int damage = (int)((10 + UpgradeManager.GetDamageBonus()) * _actualDamageMultiplier);
+                        otherPlayer.TakeDamage(damage);
                     }
                 }
             }

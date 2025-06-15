@@ -18,6 +18,7 @@ public class EnemyController : DamageableController
     private float _lastAttackTime = 0f;                            // 마지막 공격 시각 기록
     private bool _isAttacking = false;                             // 공격 중 여부
     private PlayerController _lastAttacker;                        // 마지막으로 공격한 플레이어 추적
+    private PlayerController _currentTarget;                       // 현재 타겟 플레이어
 
     private void Start()
     {
@@ -34,18 +35,17 @@ public class EnemyController : DamageableController
             return;
         }
 
-        // 플레이어가 사망 상태면 공격 애니메이션 해제 후 종료
-        if (EnemySpawner.Instance.Player.isDead)
+        // 가장 가까운 살아있는 플레이어 찾기
+        _currentTarget = EnemySpawner.Instance.GetNearestAlivePlayer(transform.position);
+        
+        if (_currentTarget == null || _currentTarget.isDead)
         {
             animator.SetBool("isAttack", false);
             return;
         }
 
-        if (EnemySpawner.Instance.Player == null)
-            return;
-
         // 플레이어 위치 및 거리 계산
-        Vector3 playerPos = EnemySpawner.Instance.Player.transform.position;
+        Vector3 playerPos = _currentTarget.transform.position;
         float distance = Vector3.Distance(transform.position, playerPos);
 
         // 공격 중인데 플레이어가 범위를 벗어나면 공격 상태 해제 후 추격 시작
@@ -81,12 +81,22 @@ public class EnemyController : DamageableController
     public override void TakeDamage(float damage)
     {
         // 데미지를 준 플레이어 추적
-        if (EnemySpawner.Instance.Player != null && !EnemySpawner.Instance.Player.isDead)
+        // 발사체에서 설정한 공격자가 있으면 그것을 사용
+        // 없으면 가장 가까운 플레이어로 설정
+        if (_lastAttacker == null)
         {
-            _lastAttacker = EnemySpawner.Instance.Player;
+            _lastAttacker = EnemySpawner.Instance.GetNearestAlivePlayer(transform.position);
         }
         
         base.TakeDamage(damage);
+    }
+
+    /// <summary>
+    /// 공격자 설정 (Projectile에서 호출)
+    /// </summary>
+    public void SetAttacker(PlayerController attacker)
+    {
+        _lastAttacker = attacker;
     }
 
     /// <summary>
@@ -94,9 +104,9 @@ public class EnemyController : DamageableController
     /// </summary>
     public void ApplyDamage()
     {
-        if (EnemySpawner.Instance.Player != null)
+        if (_currentTarget != null && !_currentTarget.isDead)
         {
-            EnemySpawner.Instance.Player.TakeDamage(_damage);
+            _currentTarget.TakeDamage(_damage);
         }
     }
 
@@ -117,7 +127,7 @@ public class EnemyController : DamageableController
     /// </summary>
     public void RangeAttack()
     {
-        if (EnemySpawner.Instance.Player == null)
+        if (_currentTarget == null || _currentTarget.isDead)
             return;
 
         if (_projectilePrefab != null && _projectileSpawnPoint != null)
@@ -125,7 +135,7 @@ public class EnemyController : DamageableController
             GameObject bullet = Instantiate(_projectilePrefab, _projectileSpawnPoint.position, Quaternion.identity);
 
             // 플레이어의 몸통 부분(높이 오프셋 1.3f)을 목표로 설정
-            Vector3 targetPos = EnemySpawner.Instance.Player.transform.position + new Vector3(0f, 0.8f, 0f);
+            Vector3 targetPos = _currentTarget.transform.position + new Vector3(0f, 0.8f, 0f);
             bullet.transform.LookAt(targetPos);
 
             Projectile projectile = bullet.GetComponent<Projectile>();
@@ -144,11 +154,15 @@ public class EnemyController : DamageableController
     {
         // 골드 수급량 증가 업그레이드가 있다면 추가 보정
         int totalGold = _baseGold + (int)UpgradeManager.GetGoldGainBonus();
-        UpgradeManager.Gold += totalGold;
-        UpgradeManager.SaveData();
-
-        UIManager.Instance.RefreshUpgradeUI();
-        UIManager.Instance.RefreshGoldUI();
+        
+        // 마지막 공격자가 현재 플레이어라면 골드 지급
+        if (_lastAttacker != null && _lastAttacker == PlayerManager.Instance.curPlayer)
+        {
+            UpgradeManager.Gold += totalGold;
+            UpgradeManager.SaveData();
+            UIManager.Instance.RefreshUpgradeUI();
+            UIManager.Instance.RefreshGoldUI();
+        }
         
         // GameManager에 좀비 킬 추가
         if (GameManager.Instance != null && _lastAttacker != null)

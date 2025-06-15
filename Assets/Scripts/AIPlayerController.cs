@@ -60,11 +60,34 @@ public class AIPlayerController : MonoBehaviour
         _agent = GetComponent<NavMeshAgent>();
         
         // AI는 수동 조작 비활성화
-        _playerController.enabled = false;
+        if (_playerController != null)
+        {
+            _playerController.IsAI = true; // IsAI 프로퍼티 사용
+            
+            // NavMeshAgent 속도를 PlayerController 속도와 동기화
+            if (_agent != null)
+            {
+                _agent.speed = 5f; // PlayerController의 기본 이동 속도
+                _agent.updateRotation = false; // 회전은 AI가 직접 제어
+            }
+        }
     }
     
     private void Start()
     {
+        // AI 플레이어를 EnemySpawner에 등록
+        if (EnemySpawner.Instance != null)
+        {
+            EnemySpawner.Instance.RegisterPlayer(_playerController);
+        }
+        
+        // GameManager에도 등록
+        if (GameManager.Instance != null)
+        {
+            string aiName = "AI_" + Random.Range(1000, 9999);
+            GameManager.Instance.RegisterPlayer(_playerController, aiName);
+        }
+        
         StartCoroutine(AIRoutine());
         StartCoroutine(DetectionRoutine());
     }
@@ -86,8 +109,31 @@ public class AIPlayerController : MonoBehaviour
             // 현재 상태에 따른 행동 실행
             ExecuteCurrentState();
             
+            // AI 애니메이션 업데이트
+            UpdateAIMovementAnimation();
+            
             yield return null;
         }
+    }
+    
+    /// <summary>
+    /// AI 이동 및 애니메이션 업데이트
+    /// </summary>
+    private void UpdateAIMovementAnimation()
+    {
+        if (_playerController == null || _playerController.animator == null) return;
+        
+        // NavMeshAgent의 속도를 기반으로 애니메이션 파라미터 설정
+        Vector3 velocity = _agent.velocity;
+        Vector3 localVelocity = transform.InverseTransformDirection(velocity);
+        
+        // 정규화된 속도값 계산 (최대 속도 기준)
+        float forwardSpeed = localVelocity.z / _agent.speed;
+        float rightSpeed = localVelocity.x / _agent.speed;
+        
+        // 애니메이터 파라미터 설정
+        _playerController.animator.SetFloat("X", rightSpeed);
+        _playerController.animator.SetFloat("Y", forwardSpeed);
     }
     
     /// <summary>
