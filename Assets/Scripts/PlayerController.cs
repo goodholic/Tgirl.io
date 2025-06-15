@@ -130,6 +130,7 @@ public class PlayerController : DamageableController
     
     public Transform LookAtTarget { get { return _lookAtTarget; } set { _lookAtTarget = value; } }
     public CharacterType CharacterTypeProperty => _characterType;
+    public float AttackInterval => _actualAttackInterval;
 
     #region Unity Methods
     protected override void Awake()

@@ -226,7 +226,7 @@ public class AIPlayerController : MonoBehaviour
             AimAtTarget(_currentTarget);
             
             // 공격
-            if (Time.time - _lastAttackTime > _playerController._attackInterval)
+            if (Time.time - _lastAttackTime > _playerController.AttackInterval)
             {
                 PerformAttack();
                 _lastAttackTime = Time.time;
