@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 011c1434e8c0dc641b8362fdbd7fd890
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 268834
+  packageName: Best HTTP Bundle
+  packageVersion: 3.0.0
+  assetPath: Assets/Best HTTP Bundle/Links.txt
+  uploadId: 623296
